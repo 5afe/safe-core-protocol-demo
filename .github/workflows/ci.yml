@@ -1,5 +1,8 @@
-name: safe-protocol-demo
+name: safe-protocol-demo-contracts
 on: [ push, pull_request ]
+defaults:
+  run:
+    working-directory: ./contracts
 
 jobs:
   tests:
@@ -14,7 +17,7 @@ jobs:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn --frozen-lockfile
-      - run: yarn compile
+      - run: yarn build
       - run: yarn coverage
   lint:
     runs-on: ubuntu-latest
