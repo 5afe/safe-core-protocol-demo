@@ -21,10 +21,7 @@ abstract contract BasePlugin is ISafeProtocolPlugin {
 }
 
 contract SamplePlugin is BasePlugin {
-
-    constructor() BasePlugin("Sample Plugin", "1.0.0", false) {
-
-    }
+    constructor() BasePlugin("Sample Plugin", "1.0.0", false) {}
 
     function executeFromPlugin(
         ISafeProtocolManager manager,
