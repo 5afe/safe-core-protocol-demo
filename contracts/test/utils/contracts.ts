@@ -1,11 +1,15 @@
-import { BaseContract } from "ethers";
+import { Addressable, BaseContract } from "ethers";
 import hre, { deployments } from "hardhat";
 import { SamplePlugin } from "../../typechain-types";
 
-export const getInstance = async<T extends BaseContract>(name: string): Promise<T> => {
-    const deployment = await deployments.get(name);
-    const Contract = await hre.ethers.getContractFactory(name);
-    return Contract.attach(deployment.address) as T;
+export const getInstance = async<T extends BaseContract>(name: string, address: string): Promise<T> => {
+    // TODO: this typecasting should be refactored
+    return (await hre.ethers.getContractAt(name, address) as unknown) as T;
 };
 
-export const getSamplePlugin = () => getInstance<SamplePlugin>("SamplePlugin")
+export const getSingleton = async<T extends BaseContract>(name: string): Promise<T> => {
+    const deployment = await deployments.get(name);
+    return getInstance<T>(name, deployment.address)
+};
+
+export const getSamplePlugin = () => getSingleton<SamplePlugin>("SamplePlugin")
