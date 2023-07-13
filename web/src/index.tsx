@@ -4,12 +4,12 @@ import './index.css';
 import Home from './routes/home/Home';
 import reportWebVitals from './reportWebVitals';
 import {
-  createBrowserRouter,
+  createHashRouter,
   RouterProvider,
 } from "react-router-dom";
 import PluginList from './routes/plugins/PluginList';
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <Home />,
