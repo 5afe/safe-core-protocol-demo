@@ -48,15 +48,13 @@ library PluginMetaDataOps {
 abstract contract BasePlugin is ISafeProtocolPlugin, MetaDataProvider {
     using PluginMetaDataOps for PluginMetaData;
 
-    ISafeProtocolManager public immutable manager;
     string public name;
     string public version;
     bool public immutable requiresRootAccess;
     bytes32 public immutable metaDataHash;
     bytes private encodedMetaData;
 
-    constructor(ISafeProtocolManager _manager, PluginMetaData memory metaData) {
-        manager = _manager;
+    constructor(PluginMetaData memory metaData) {
         name = metaData.name;
         version = metaData.version;
         requiresRootAccess = metaData.requiresRootAccess;
@@ -77,14 +75,15 @@ abstract contract BasePlugin is ISafeProtocolPlugin, MetaDataProvider {
 }
 
 contract SamplePlugin is BasePlugin {
-    constructor(ISafeProtocolManager manager)
-        BasePlugin(manager, PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""}))
-    {}
+    ISafeProtocolManager public immutable manager;
 
-    function executeFromPlugin(
-        ISafe safe,
-        SafeTransaction calldata safetx
-    ) external returns (bytes[] memory data) {
+    constructor(
+        ISafeProtocolManager _manager
+    ) BasePlugin(PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""})) {
+        manager = _manager;
+    }
+
+    function executeFromPlugin(ISafe safe, SafeTransaction calldata safetx) external returns (bytes[] memory data) {
         (data) = manager.executeTransaction(safe, safetx);
     }
 }
