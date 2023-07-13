@@ -6,7 +6,7 @@ import yargs from "yargs";
 import { HttpNetworkUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
-import { getSingletonFactoryInfo } from "@gnosis.pm/safe-singleton-factory";
+import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 import { ethers } from "ethers";
 
 // Load environment variables.
@@ -53,6 +53,12 @@ const config: HardhatUserConfig = {
   solidity: "0.8.18",
   gasReporter: {
     enabled: (process.env.REPORT_GAS) ? true : false
+  },
+  paths: {
+    artifacts: "build/artifacts",
+    cache: "build/cache",
+    deploy: "src/deploy",
+    sources: "contracts",
   },
   networks: {
     hardhat: {

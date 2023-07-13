@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {ISafe} from "./interfaces/Accounts.sol";
-import {ISafeProtocolPlugin} from "./interfaces/Integrations.sol";
-import {ISafeProtocolManager} from "./interfaces/Manager.sol";
-import {SafeTransaction, SafeRootAccess} from "./DataTypes.sol";
+import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
+import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/interfaces/Integrations.sol";
+import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
+import {SafeTransaction, SafeRootAccess} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 
 enum MetaDataProviderType {
     IPFS,
@@ -75,15 +75,15 @@ abstract contract BasePlugin is ISafeProtocolPlugin, MetaDataProvider {
 }
 
 contract SamplePlugin is BasePlugin {
-    constructor()
-        BasePlugin(PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""}))
-    {}
+    ISafeProtocolManager public immutable manager;
 
-    function executeFromPlugin(
-        ISafeProtocolManager manager,
-        ISafe safe,
-        SafeTransaction calldata safetx
-    ) external returns (bytes[] memory data) {
+    constructor(
+        ISafeProtocolManager _manager
+    ) BasePlugin(PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""})) {
+        manager = _manager;
+    }
+
+    function executeFromPlugin(ISafe safe, SafeTransaction calldata safetx) external returns (bytes[] memory data) {
         (data) = manager.executeTransaction(safe, safetx);
     }
 }
