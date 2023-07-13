@@ -1,4 +1,4 @@
-name: safe-protocol-demo-contracts
+name: safe-core-protocol-demo-contracts
 on: [ push, pull_request ]
 defaults:
   run:

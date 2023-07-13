@@ -1,4 +1,11 @@
 {
+  "name": "@safe-global/safe-core-protocol-demo",
+  "version": "0.1.0-alpha.0",
+  "description": "'Demo of Safe{Core} Protocol contracts",
+  "main": "dist/index.js",
+  "repository": "git@github.com:5afe/safe-core-protocol-demo.git",
+  "author": "safe.global",
+  "license": "LGPL-3.0",
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
@@ -52,13 +59,6 @@
     "typescript": "~5.0.0",
     "yargs": "^17.7.2"
   },
-  "name": "@safe-global/safe-protocol-demo",
-  "version": "0.1.0-alpha.0",
-  "description": "'Demo of Safe protocol contracts",
-  "main": "dist/index.js",
-  "repository": "git@github.com:5afe/safe-protocol-demo.git",
-  "author": "safe.global",
-  "license": "LGPL-3.0",
   "files": [
     "contracts",
     "dist",
