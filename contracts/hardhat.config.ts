@@ -22,6 +22,8 @@ const argv : any = yargs
 
 const { NODE_URL, MNEMONIC, INFURA_KEY, ETHERSCAN_API_KEY} = process.env;
 
+import "./src/tasks/test_registry"
+
 const deterministicDeployment = (network: string): DeterministicDeploymentInfo => {
   const info = getSingletonFactoryInfo(parseInt(network));
   if (!info) {

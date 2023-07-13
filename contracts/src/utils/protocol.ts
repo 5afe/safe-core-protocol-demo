@@ -35,7 +35,8 @@ export const getProtocolRegistryAddress = async(hre: HardhatRuntimeEnvironment):
     if (chainId === "31337") return deployMock(hre, "RegistryMock")
     
     if (!(chainId in protocolDeployments)) throw Error("Unsupported Chain")
-    const registry = (protocolDeployments as any)[chainId][0].contracts.SafeProtocolRegistry.address
+    // We use the unrestricted registry for the demo
+    const registry = (protocolDeployments as any)[chainId][0].contracts.TestSafeProtocolRegistryUnrestricted.address
     if (typeof registry !== "string") throw Error("Unexpected Registry")
     return registry
 }

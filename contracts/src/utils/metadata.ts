@@ -1,6 +1,7 @@
 import { AbiCoder, isHexString, keccak256 } from "ethers";
 import { BasePlugin, MetaDataProvider } from "../../typechain-types";
-import { getInstance } from "./contracts";
+import { getInstance } from "../utils/contracts";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface PluginMetaData {
     name: string;
@@ -17,24 +18,24 @@ const ProviderType_Contract = 2n;
 
 const PluginMetaDataType: string[] = ["string name", "string version", "bool requiresRootAccess", "string iconUrl", "string appUrl"];
 
-const loadPluginMetaDataFromContract = async (provider: string, metaDataHash: string): Promise<string> => {
-    const providerInstance = await getInstance<MetaDataProvider>("MetaDataProvider", provider);
+const loadPluginMetaDataFromContract = async (hre: HardhatRuntimeEnvironment, provider: string, metaDataHash: string): Promise<string> => {
+    const providerInstance = await getInstance<MetaDataProvider>(hre, "MetaDataProvider", provider);
     return await providerInstance.retrieveMetaData(metaDataHash);
 };
 
-const loadRawMetaData = async (plugin: BasePlugin, metaDataHash: string): Promise<string> => {
+const loadRawMetaData = async (hre: HardhatRuntimeEnvironment, plugin: BasePlugin, metaDataHash: string): Promise<string> => {
     const [type, source] = await plugin.metaProvider();
     switch (type) {
         case ProviderType_Contract:
-            return loadPluginMetaDataFromContract(AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metaDataHash);
+            return loadPluginMetaDataFromContract(hre, AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metaDataHash);
         default:
             throw Error("Unsupported MetaDataProviderType");
     }
 };
 
-export const loadPluginMetaData = async (plugin: BasePlugin): Promise<PluginMetaData> => {
+export const loadPluginMetaData = async (hre: HardhatRuntimeEnvironment, plugin: BasePlugin): Promise<PluginMetaData> => {
     const metaDataHash = await plugin.metaDataHash();
-    const metaData = await loadRawMetaData(plugin, metaDataHash);
+    const metaData = await loadRawMetaData(hre, plugin, metaDataHash);
     if (metaDataHash !== keccak256(metaData)) throw Error("Invalid meta data retrieved!");
     return decodePluginMetaData(metaData);
 };
