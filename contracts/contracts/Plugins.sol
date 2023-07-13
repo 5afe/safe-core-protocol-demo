@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {ISafe} from "./interfaces/Accounts.sol";
-import {ISafeProtocolPlugin} from "./interfaces/Integrations.sol";
-import {ISafeProtocolManager} from "./interfaces/Manager.sol";
-import {SafeTransaction, SafeRootAccess} from "./DataTypes.sol";
+import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
+import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/interfaces/Integrations.sol";
+import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
+import {SafeTransaction, SafeRootAccess} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 
 enum MetaDataProviderType {
     IPFS,
@@ -48,13 +48,15 @@ library PluginMetaDataOps {
 abstract contract BasePlugin is ISafeProtocolPlugin, MetaDataProvider {
     using PluginMetaDataOps for PluginMetaData;
 
+    ISafeProtocolManager public immutable manager;
     string public name;
     string public version;
     bool public immutable requiresRootAccess;
     bytes32 public immutable metaDataHash;
     bytes private encodedMetaData;
 
-    constructor(PluginMetaData memory metaData) {
+    constructor(ISafeProtocolManager _manager, PluginMetaData memory metaData) {
+        manager = _manager;
         name = metaData.name;
         version = metaData.version;
         requiresRootAccess = metaData.requiresRootAccess;
@@ -75,12 +77,11 @@ abstract contract BasePlugin is ISafeProtocolPlugin, MetaDataProvider {
 }
 
 contract SamplePlugin is BasePlugin {
-    constructor()
-        BasePlugin(PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""}))
+    constructor(ISafeProtocolManager manager)
+        BasePlugin(manager, PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""}))
     {}
 
     function executeFromPlugin(
-        ISafeProtocolManager manager,
         ISafe safe,
         SafeTransaction calldata safetx
     ) external returns (bytes[] memory data) {
