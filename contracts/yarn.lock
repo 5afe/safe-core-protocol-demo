@@ -788,10 +788,10 @@
   resolved "https://registry.yarnpkg.com/@safe-global/mock-contract/-/mock-contract-4.0.0.tgz#8e1e17e93af5d4b343a6bb6cef8c1f513cb7a92e"
   integrity sha512-6ijStTgQI6JzYe8Nsc4j1VW4XQ89qCl7ZkRGxwwlxnaOMDYzVekwPACbg2kDDzhtJ4p8vSvE6ZroxSkvP7610A==
 
-"@safe-global/safe-core-protocol@^0.1.0-alpha.1":
-  version "0.1.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@safe-global/safe-core-protocol/-/safe-core-protocol-0.1.0-alpha.1.tgz#5f5bef561d4e348aea0cd29791c51c25f7acfd76"
-  integrity sha512-9mNelCVdzkyomAgVFTOAEmI0pSeB//hkccR5Kuhvu1nxAs1XNVhIkC+z9XIa6N+3LJqr/AhuZYz2qdTeP5D5uA==
+"@safe-global/safe-core-protocol@^0.1.0-alpha.3":
+  version "0.1.0-alpha.3"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-core-protocol/-/safe-core-protocol-0.1.0-alpha.3.tgz#355b81283b4ce611aa651af76186b1cd91ea0f45"
+  integrity sha512-iXIaqOrPuJVkTyLHlnzxa5+/oicK43snL6iH/m1f7nFqySvUlXcV29MeS9b3S5a6k8r3cMX9IlmK6GpWk0tx4w==
 
 "@safe-global/safe-singleton-factory@^1.0.14":
   version "1.0.14"
