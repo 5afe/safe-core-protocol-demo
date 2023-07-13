@@ -1,6 +1,6 @@
-# Safe Protocol demo
+# Safe{Core} Protocol demo
 
-This project shows the usage of [Safe protocol](https://github.com/5afe/safe-protocol)
+This project shows the usage of [Safe{Core} protocol](https://github.com/5afe/safe-core-protocol)
 
 ## Useful commands
 
@@ -26,16 +26,4 @@ yarn test
 
 ```bash
 yarn deploy <network>
-```
-
-### Verify
-
-#### SafeProtocolRegistry.sol/TestSafeProtocolRegistryUnrestricted.sol
-```
-npx hardhat verify --network goerli <contract_address> <initial_owner>
-```
-
-#### SafeProtocolManager.sol
-```
-npx hardhat verify --network goerli <contract_address> <initial_owner> <registry_address>
 ```
