@@ -6,18 +6,18 @@ import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/int
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {SafeTransaction, SafeRootAccess} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 
-enum MetaDataProviderType {
+enum MetadataProviderType {
     IPFS,
     URL,
     Contract,
     Event
 }
 
-interface MetaDataProvider {
-    function retrieveMetaData(bytes32 metaDataHash) external view returns (bytes memory metaData);
+interface MetadataProvider {
+    function retrieveMetadata(bytes32 metadataHash) external view returns (bytes memory metadata);
 }
 
-struct PluginMetaData {
+struct PluginMetadata {
     string name;
     string version;
     bool requiresRootAccess;
@@ -25,52 +25,57 @@ struct PluginMetaData {
     string appUrl;
 }
 
-library PluginMetaDataOps {
-    function encode(PluginMetaData memory data) internal pure returns (bytes memory) {
+library PluginMetadataOps {
+    function encode(PluginMetadata memory data) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(0x00), // Format
                 uint8(0x00), // Format version
-                abi.encode(data.name, data.version, data.requiresRootAccess, data.iconUrl, data.appUrl) // Meta Data
+                abi.encode(data.name, data.version, data.requiresRootAccess, data.iconUrl, data.appUrl) // Plugin Metadata
             );
     }
 
-    function decode(bytes calldata data) internal pure returns (PluginMetaData memory) {
+    function decode(bytes calldata data) internal pure returns (PluginMetadata memory) {
         require(bytes16(data[0:2]) == bytes16(0x0000), "Unsupported format or format version");
         (string memory name, string memory version, bool requiresRootAccess, string memory iconUrl, string memory appUrl) = abi.decode(
             data[2:],
             (string, string, bool, string, string)
         );
-        return PluginMetaData(name, version, requiresRootAccess, iconUrl, appUrl);
+        return PluginMetadata(name, version, requiresRootAccess, iconUrl, appUrl);
     }
 }
 
-abstract contract BasePlugin is ISafeProtocolPlugin, MetaDataProvider {
-    using PluginMetaDataOps for PluginMetaData;
+abstract contract BasePlugin is ISafeProtocolPlugin, MetadataProvider {
+    using PluginMetadataOps for PluginMetadata;
 
     string public name;
     string public version;
     bool public immutable requiresRootAccess;
-    bytes32 public immutable metaDataHash;
-    bytes private encodedMetaData;
+    bytes32 public immutable metadataHash;
+    bytes private encodedMetadata;
 
-    constructor(PluginMetaData memory metaData) {
-        name = metaData.name;
-        version = metaData.version;
-        requiresRootAccess = metaData.requiresRootAccess;
-        // MetaData Format + Format Version + Encoded MetaData
-        encodedMetaData = metaData.encode();
-        metaDataHash = keccak256(encodedMetaData);
+    constructor(PluginMetadata memory metadata) {
+        name = metadata.name;
+        version = metadata.version;
+        requiresRootAccess = metadata.requiresRootAccess;
+        // Metadata Format + Format Version + Encoded Metadata
+        encodedMetadata = metadata.encode();
+        metadataHash = keccak256(encodedMetadata);
     }
 
+    // TODO: Legacy version that should be removed
     function metaProvider() external view override returns (uint256 providerType, bytes memory location) {
-        providerType = uint256(MetaDataProviderType.Contract);
+        return metadataProvider();
+    }
+
+    function metadataProvider() public view returns (uint256 providerType, bytes memory location) {
+        providerType = uint256(MetadataProviderType.Contract);
         location = abi.encode(address(this));
     }
 
-    function retrieveMetaData(bytes32 _metaDataHash) external view returns (bytes memory metaData) {
-        require(metaDataHash == _metaDataHash, "Cannot retrieve meta data");
-        return encodedMetaData;
+    function retrieveMetadata(bytes32 _metadataHash) external view returns (bytes memory metadata) {
+        require(metadataHash == _metadataHash, "Cannot retrieve metadata");
+        return encodedMetadata;
     }
 }
 
@@ -79,7 +84,7 @@ contract SamplePlugin is BasePlugin {
 
     constructor(
         ISafeProtocolManager _manager
-    ) BasePlugin(PluginMetaData({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""})) {
+    ) BasePlugin(PluginMetadata({name: "Sample Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""})) {
         manager = _manager;
     }
 

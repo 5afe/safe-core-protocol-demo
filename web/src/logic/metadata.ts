@@ -1,9 +1,7 @@
-import { AbiCoder, isHexString, keccak256 } from "ethers";
-import { BasePlugin, MetadataProvider } from "../../typechain-types";
-import { getInstance } from "../utils/contracts";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { AbiCoder, Contract, isHexString, keccak256 } from "ethers";
+import { getMetadataProvider } from "./protocol";
 
-interface PluginMetadata {
+export interface PluginMetadata {
     name: string;
     version: string;
     requiresRootAccess: boolean;
@@ -11,31 +9,33 @@ interface PluginMetadata {
     appUrl: string;
 }
 
-// const ProviderType_IPFS = 0n;
-// const ProviderType_URL = 1n;
-const ProviderType_Contract = 2n;
-// const ProviderType_Event = 3n;
+// const ProviderType_IPFS = BigInt(0);
+// const ProviderType_URL = BigInt(1);
+const ProviderType_Contract = BigInt(2);
+// const ProviderType_Event = BigInt(3);
 
 const PluginMetadataType: string[] = ["string name", "string version", "bool requiresRootAccess", "string iconUrl", "string appUrl"];
 
-const loadPluginMetadataFromContract = async (hre: HardhatRuntimeEnvironment, provider: string, metadataHash: string): Promise<string> => {
-    const providerInstance = await getInstance<MetadataProvider>(hre, "MetadataProvider", provider);
+const loadPluginMetadataFromContract = async (provider: string, metadataHash: string): Promise<string> => {
+    const providerInstance = getMetadataProvider(provider);
     return await providerInstance.retrieveMetadata(metadataHash);
 };
 
-const loadRawMetadata = async (hre: HardhatRuntimeEnvironment, plugin: BasePlugin, metadataHash: string): Promise<string> => {
+const loadRawMetadata = async (plugin: Contract, metadataHash: string): Promise<string> => {
     const [type, source] = await plugin.metadataProvider();
+    console.log(typeof type)
     switch (type) {
         case ProviderType_Contract:
-            return loadPluginMetadataFromContract(hre, AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metadataHash);
+            return loadPluginMetadataFromContract(AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metadataHash);
         default:
             throw Error("Unsupported MetadataProviderType");
     }
 };
 
-export const loadPluginMetadata = async (hre: HardhatRuntimeEnvironment, plugin: BasePlugin): Promise<PluginMetadata> => {
+export const loadPluginMetadata = async (plugin: Contract): Promise<PluginMetadata> => {
+    console.log({plugin})
     const metadataHash = await plugin.metadataHash();
-    const metadata = await loadRawMetadata(hre, plugin, metadataHash);
+    const metadata = await loadRawMetadata(plugin, metadataHash);
     if (metadataHash !== keccak256(metadata)) throw Error("Invalid metadata retrieved!");
     return decodePluginMetadata(metadata);
 };

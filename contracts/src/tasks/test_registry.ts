@@ -3,7 +3,7 @@ import "@nomicfoundation/hardhat-ethers";
 import { task } from "hardhat/config";
 import { getPlugin, getRegistry, getSamplePlugin } from "../utils/contracts";
 import { IntegrationType } from "../utils/constants";
-import { loadPluginMetaData } from "../utils/metadata";
+import { loadPluginMetadata } from "../utils/metadata";
 
 task("register-plugin", "Registers the sample Plugin in the Safe{Core} test register")
     .setAction(async (_, hre) => {
@@ -19,8 +19,8 @@ task("list-plugins", "List available Plugins in the Safe{Core} test register")
         const events = await registry.queryFilter(registry.filters.IntegrationAdded)
         for (const event of events) {
             const plugin = await getPlugin(hre, event.args.integration)
-            const metaData = await loadPluginMetaData(hre, plugin)
-            console.log(event.args.integration, metaData)
+            const metadata = await loadPluginMetadata(hre, plugin)
+            console.log(event.args.integration, metadata)
         }
     });
 
