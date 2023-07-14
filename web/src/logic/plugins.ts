@@ -8,8 +8,12 @@ export const loadPluginDetails = async(pluginAddress: string): Promise<PluginMet
     return metadata
 }
 
-export const loadPlugins = async(): Promise<string[]> => {
+export const loadPlugins = async(filterFlagged: boolean = true): Promise<string[]> => {
     const registry = getRegistry()
-    const events = (await registry.queryFilter(registry.filters.IntegrationAdded)) as EventLog[]
-    return events.map((event: EventLog) => event.args.integration)
+    const addedEvents = (await registry.queryFilter(registry.filters.IntegrationAdded)) as EventLog[]
+    const addedIntegrations = addedEvents.map((event: EventLog) => event.args.integration)
+    if (!filterFlagged) return addedIntegrations;
+    const flaggedEvents = (await registry.queryFilter(registry.filters.IntegrationFlagged)) as EventLog[]
+    const flaggedIntegrations = flaggedEvents.map((event: EventLog) => event.args.integration)
+    return addedIntegrations.filter((integration) => flaggedIntegrations.indexOf(integration) < 0)
 }

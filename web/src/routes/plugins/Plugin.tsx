@@ -5,7 +5,6 @@ import * as blockies from 'blockies-ts';
 import "./Plugins.css";
 import { PluginMetadata } from "../../logic/metadata";
 import { loadPluginDetails } from "../../logic/plugins";
-import { Link } from "@mui/material";
 
 type PluginMetaProps = {
     metadata: PluginMetadata;
