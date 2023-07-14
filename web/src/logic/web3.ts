@@ -1,5 +1,12 @@
 import { AbstractProvider, ethers } from "ethers"
+import { getSafeAppsProvider, isConnectToSafe } from "./safeapp"
+import { PROTOCOL_PUBLIC_RPC } from "./constants"
 
-export const getProvider = (): AbstractProvider => {
-    return new ethers.JsonRpcProvider("https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161")
+export const getProvider = async(): Promise<AbstractProvider> => {
+    if (await isConnectToSafe()) {
+        console.log("Use SafeAppsProvider")
+        return await getSafeAppsProvider()
+    }
+    console.log("Use JsonRpcProvider")
+    return new ethers.JsonRpcProvider(PROTOCOL_PUBLIC_RPC)
 }

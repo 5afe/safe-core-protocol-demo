@@ -17,7 +17,7 @@ const ProviderType_Contract = BigInt(2);
 const PluginMetadataType: string[] = ["string name", "string version", "bool requiresRootAccess", "string iconUrl", "string appUrl"];
 
 const loadPluginMetadataFromContract = async (provider: string, metadataHash: string): Promise<string> => {
-    const providerInstance = getMetadataProvider(provider);
+    const providerInstance = await getMetadataProvider(provider);
     return await providerInstance.retrieveMetadata(metadataHash);
 };
 
