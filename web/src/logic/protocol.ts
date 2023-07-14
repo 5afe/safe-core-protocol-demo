@@ -2,13 +2,13 @@ import { Interface, ethers } from "ethers"
 import protocolDeployments from "@safe-global/safe-core-protocol"
 import { getProvider } from "./web3"
 
-const METADATA_PROVIDER_ABI = [
-    "function retrieveMetaData(bytes32 metaDataHash) external view returns (bytes metaData)"
+const Metadata_PROVIDER_ABI = [
+    "function retrieveMetadata(bytes32 metadataHash) external view returns (bytes metadata)"
 ]
 
 const PLUGIN_ABI = [
-    "function metaDataHash() public view returns (bytes32 metaDataHash)",
-    "function metaProvider() external view returns (uint256 providerType, bytes location)"
+    "function metadataHash() public view returns (bytes32 metadataHash)",
+    "function metadataProvider() external view returns (uint256 providerType, bytes location)"
 ]
 
 export const getRegistry = () => {
@@ -35,7 +35,7 @@ export const getMetadataProvider = (providerAddress: string) => {
     const provider = getProvider()
     return new ethers.Contract(
         providerAddress,
-        METADATA_PROVIDER_ABI,
+        Metadata_PROVIDER_ABI,
         provider
     )
 }

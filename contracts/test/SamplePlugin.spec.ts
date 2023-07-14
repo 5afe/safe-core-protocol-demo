@@ -2,7 +2,7 @@ import hre, { deployments } from "hardhat";
 import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { getSamplePlugin } from "../src/utils/contracts";
-import { loadPluginMetaData } from "../src/utils/metadata";
+import { loadPluginMetadata } from "../src/utils/metadata";
 
 describe("SamplePlugin", async () => {
     let user1: SignerWithAddress;
@@ -27,9 +27,9 @@ describe("SamplePlugin", async () => {
         expect(await plugin.requiresRootAccess()).to.be.false;
     });
 
-    it("can retrieve meta data for module", async () => {
+    it("can retrieve metadata for module", async () => {
         const { plugin } = await setup();
-        expect(await loadPluginMetaData(hre, plugin)).to.be.deep.eq({
+        expect(await loadPluginMetadata(hre, plugin)).to.be.deep.eq({
             name: "Sample Plugin",
             version: "1.0.0",
             requiresRootAccess: false,

@@ -1,11 +1,11 @@
 import { EventLog } from "ethers";
-import { PluginMetaData, loadPluginMetaData } from "./metadata";
+import { PluginMetadata, loadPluginMetadata } from "./metadata";
 import { getPlugin, getRegistry } from "./protocol";
 
-export const loadPluginMeta = async(pluginAddress: string): Promise<PluginMetaData> => {
+export const loadPluginDetails = async(pluginAddress: string): Promise<PluginMetadata> => {
     const plugin = getPlugin(pluginAddress)
-    const metaData = loadPluginMetaData(plugin)
-    return metaData
+    const metadata = loadPluginMetadata(plugin)
+    return metadata
 }
 
 export const loadPlugins = async(): Promise<string[]> => {

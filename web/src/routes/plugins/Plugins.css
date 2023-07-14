@@ -14,12 +14,17 @@
 .Plugin {
   width: 100%;
   text-align: start;
-  font-size: 2vmin;
+  font-size: 20pt;
   color: white;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: start;
+  justify-content: space-between;
+}
+
+.Plugin-title {
+  width: 100%;
+  text-align: start;
 }
 
 .Plugins-header-logo {
