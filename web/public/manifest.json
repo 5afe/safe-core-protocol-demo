@@ -1,6 +1,8 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Safe{Core} Protocol Demo",
+  "name": "Safe{Core} Protocol Demo",
+  "description": "Safe{Core} Protocol Demo",
+  "iconPath": "logo192.png",
   "icons": [
     {
       "src": "favicon.ico",
