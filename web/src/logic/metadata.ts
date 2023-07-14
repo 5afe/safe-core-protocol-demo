@@ -16,17 +16,17 @@ const ProviderType_Contract = BigInt(2);
 
 const PluginMetadataType: string[] = ["string name", "string version", "bool requiresRootAccess", "string iconUrl", "string appUrl"];
 
-const loadPluginMetadataFromContract = async (provider: string, MetadataHash: string): Promise<string> => {
+const loadPluginMetadataFromContract = async (provider: string, metadataHash: string): Promise<string> => {
     const providerInstance = getMetadataProvider(provider);
-    return await providerInstance.retrieveMetadata(MetadataHash);
+    return await providerInstance.retrieveMetadata(metadataHash);
 };
 
-const loadRawMetadata = async (plugin: Contract, MetadataHash: string): Promise<string> => {
+const loadRawMetadata = async (plugin: Contract, metadataHash: string): Promise<string> => {
     const [type, source] = await plugin.metadataProvider();
     console.log(typeof type)
     switch (type) {
         case ProviderType_Contract:
-            return loadPluginMetadataFromContract(AbiCoder.defaultAbiCoder().decode(["address"], source)[0], MetadataHash);
+            return loadPluginMetadataFromContract(AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metadataHash);
         default:
             throw Error("Unsupported MetadataProviderType");
     }
@@ -34,7 +34,7 @@ const loadRawMetadata = async (plugin: Contract, MetadataHash: string): Promise<
 
 export const loadPluginMetadata = async (plugin: Contract): Promise<PluginMetadata> => {
     console.log({plugin})
-    const metadataHash = await plugin.MetadataHash();
+    const metadataHash = await plugin.metadataHash();
     const metadata = await loadRawMetadata(plugin, metadataHash);
     if (metadataHash !== keccak256(metadata)) throw Error("Invalid metadata retrieved!");
     return decodePluginMetadata(metadata);
