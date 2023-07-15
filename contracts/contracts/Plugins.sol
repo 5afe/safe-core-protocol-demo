@@ -105,6 +105,9 @@ import {_getFeeCollectorRelayContext, _getFeeTokenRelayContext, _getFeeRelayCont
 address constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
 contract SamplePlugin is BasePluginWithEventMetadata {
+
+    event MaxFeeUpdated(address indexed account, address indexed feeToken, uint256 maxFee);
+
     error FeeTooHigh(address feeToken, uint256 fee);
     error FeePaymentFailure(bytes data);
     error UntrustedOrigin(address origin);
@@ -140,6 +143,7 @@ contract SamplePlugin is BasePluginWithEventMetadata {
 
     function setMaxFeePerToken(address token, uint256 maxFee) external {
         maxFeePerToken[msg.sender][token] = maxFee;
+        emit MaxFeeUpdated(msg.sender, token, maxFee);
     }
 
     function payFee(ISafe safe, uint256 nonce) internal {
@@ -178,7 +182,7 @@ contract SamplePlugin is BasePluginWithEventMetadata {
         if (trustedOrigin != address(0) && msg.sender != trustedOrigin) revert UntrustedOrigin(msg.sender);
 
         relayCall(address(safe), data);
-        // We use the hash of the tx to relay has a nonce as this is a unique id
+        // We use the hash of the tx to relay has a nonce as this is unique
         uint256 nonce = uint256(keccak256(abi.encode(safe, data, block.number)));
         payFee(safe, nonce);
     }
