@@ -48,7 +48,7 @@ export const openSafeApp = async(appUrl: string) => {
     const networkPrefix = chainInfo.shortName
     if (origin?.length) {
         window.open(
-            `${origin}/apps/open?safe=${networkPrefix}:${safe.safeAddress}&appUrl=${encodeURI(appUrl)}`,
+            `${origin}/apps/open?safe=${networkPrefix}:${safe.safeAddress}&appUrl=${encodeURIComponent(appUrl)}`,
             '_blank',
         )
     }

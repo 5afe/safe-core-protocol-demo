@@ -84,7 +84,7 @@ export const Sample: FunctionComponent<{}> = () => {
             {isLoading && <CircularProgress />}
             {feeTokens.length > 0 && selectedFeeToken !== undefined && <>
                 <FormControl fullWidth>
-                    <InputLabel id="demo-simple-select-label">Age</InputLabel>
+                    <InputLabel id="demo-simple-select-label">Fee Token</InputLabel>
                     <Select
                         labelId="demo-simple-select-label"
                         id="demo-simple-select"
