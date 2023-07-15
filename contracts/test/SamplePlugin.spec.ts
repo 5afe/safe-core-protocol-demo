@@ -34,7 +34,7 @@ describe("SamplePlugin", async () => {
             version: "1.0.0",
             requiresRootAccess: false,
             iconUrl: "",
-            appUrl: "",
+            appUrl: "https://5afe.github.io/safe-core-protocol-demo/#/sample/${plugin}",
         });
     });
 });

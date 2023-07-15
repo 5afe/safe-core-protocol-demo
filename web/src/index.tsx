@@ -8,6 +8,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import PluginList from './routes/plugins/PluginList';
+import { Sample } from './routes/sample/Sample';
 
 const router = createHashRouter([
   {
@@ -17,6 +18,10 @@ const router = createHashRouter([
   {
     path: "/plugins",
     element: <PluginList />,
+  },
+  {
+    path: "/sample",
+    element: <Sample />,
   },
 ]);
 
