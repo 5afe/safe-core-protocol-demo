@@ -16,7 +16,7 @@ export const getSafeInfo = async() => {
     return cachedSafeInfo;
 }
 
-export const isConnectToSafe = async() => {
+export const isConnectedToSafe = async() => {
     try {
         const safeInfo = await Promise.race([
             waitAndError<SafeInfo>(300),
@@ -40,7 +40,7 @@ export const submitTxs = async(txs: BaseTransaction[]): Promise<string> => {
 }
 
 export const openSafeApp = async(appUrl: string) => {
-    if (!isConnectToSafe()) return
+    if (!isConnectedToSafe()) return
     const safe = await getSafeInfo()
     const environmentInfo = await safeAppsSDK.safe.getEnvironmentInfo()
     const origin = environmentInfo.origin;
@@ -48,7 +48,7 @@ export const openSafeApp = async(appUrl: string) => {
     const networkPrefix = chainInfo.shortName
     if (origin?.length) {
         window.open(
-            `${origin}/apps/open?safe=${networkPrefix}:${safe.safeAddress}&appUrl=${appUrl}`,
+            `${origin}/apps/open?safe=${networkPrefix}:${safe.safeAddress}&appUrl=${encodeURI(appUrl)}`,
             '_blank',
         )
     }

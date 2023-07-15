@@ -20,7 +20,7 @@ const router = createHashRouter([
     element: <PluginList />,
   },
   {
-    path: "/sample",
+    path: "/sample/:pluginAddress",
     element: <Sample />,
   },
 ]);

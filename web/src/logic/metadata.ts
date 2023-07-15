@@ -27,6 +27,8 @@ const loadPluginMetadataFromEvent = async (provider: string, metadataHash: strin
     const web3Provider = await getProvider()
     const eventInterface = new Interface(MetadataEvent)
     const events = await web3Provider.getLogs({
+        fromBlock: "earliest",
+        toBlock: "latest",
         address: provider,
         topics: eventInterface.encodeFilterTopics("Metadata", [metadataHash])
     })
@@ -39,7 +41,6 @@ const loadPluginMetadataFromEvent = async (provider: string, metadataHash: strin
 
 const loadRawMetadata = async (plugin: Contract, metadataHash: string): Promise<string> => {
     const [type, source] = await plugin.metadataProvider();
-    console.log(typeof type)
     switch (type) {
         case ProviderType_Contract:
             return loadPluginMetadataFromContract(AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metadataHash);

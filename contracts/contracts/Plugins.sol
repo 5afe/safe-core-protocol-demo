@@ -114,15 +114,13 @@ contract SamplePlugin is BasePluginWithEventMetadata {
     error RelayExecutionFailure(bytes data);
     error InvalidRelayMethod(bytes4 data);
 
-    ISafeProtocolManager public immutable manager;
     address public immutable trustedOrigin;
     bytes4 public immutable relayMethod;
 
     // Account => token => maxFee
-    mapping(address => mapping(address => uint256)) maxFeePerToken;
+    mapping(address => mapping(address => uint256)) public maxFeePerToken;
 
     constructor(
-        ISafeProtocolManager _manager,
         address _trustedOrigin,
         bytes4 _relayMethod
     )
@@ -136,7 +134,6 @@ contract SamplePlugin is BasePluginWithEventMetadata {
             })
         )
     {
-        manager = _manager;
         trustedOrigin = _trustedOrigin;
         relayMethod = _relayMethod;
     }
@@ -146,14 +143,14 @@ contract SamplePlugin is BasePluginWithEventMetadata {
         emit MaxFeeUpdated(msg.sender, token, maxFee);
     }
 
-    function payFee(ISafe safe, uint256 nonce) internal {
+    function payFee(ISafeProtocolManager manager, ISafe safe, uint256 nonce) internal {
         address feeCollector = _getFeeCollectorRelayContext();
         address feeToken = _getFeeTokenRelayContext();
         uint256 fee = _getFeeRelayContext();
         SafeProtocolAction[] memory actions = new SafeProtocolAction[](1);
         uint256 maxFee = maxFeePerToken[address(safe)][feeToken];
         if (fee > maxFee) revert FeeTooHigh(feeToken, fee);
-        if (feeToken == NATIVE_TOKEN) {
+        if (feeToken == NATIVE_TOKEN || feeToken == address(0)) {
             actions[0].to = payable(feeCollector);
             actions[0].value = fee;
             actions[0].data = "";
@@ -178,12 +175,12 @@ contract SamplePlugin is BasePluginWithEventMetadata {
         if (!success) revert RelayExecutionFailure(data);
     }
 
-    function executeFromPlugin(ISafe safe, bytes calldata data) external {
+    function executeFromPlugin(ISafeProtocolManager manager, ISafe safe, bytes calldata data) external {
         if (trustedOrigin != address(0) && msg.sender != trustedOrigin) revert UntrustedOrigin(msg.sender);
 
         relayCall(address(safe), data);
         // We use the hash of the tx to relay has a nonce as this is unique
-        uint256 nonce = uint256(keccak256(abi.encode(safe, data, block.number)));
-        payFee(safe, nonce);
+        uint256 nonce = uint256(keccak256(abi.encode(this, manager, safe, data, block.number)));
+        payFee(manager, safe, nonce);
     }
 }
