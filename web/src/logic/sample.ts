@@ -3,12 +3,12 @@ import { getProvider } from "./web3";
 import { GelatoRelay } from "@gelatonetwork/relay-sdk"
 import { submitTxs } from "./safeapp";
 import { getManager } from "./protocol";
-
-const gelato = new GelatoRelay()
+import { getCurrentNonce } from "./safe";
+import { getSafeMultisigTxs, SafeMultisigTransaction } from "./services";
 
 const SAMPLE_PLUGIN_CHAIN_ID = 5
 const SAMPLE_PLUGIN_ADDRESS = getAddress("0xA68799b8f1F2535ba88530FeD2300cFC69D4ABd1")
-const NATIVE_TOKEN = getAddress("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
+export const NATIVE_TOKEN = getAddress("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
 const SAMPLE_PLUGIN_ABI = [
     "function maxFeePerToken(address account, address token) public view returns (uint256 maxFee)",
     "function setMaxFeePerToken(address token, uint256 maxFee) external",
@@ -18,6 +18,8 @@ const ECR20_ABI = [
     "function decimals() public view returns (uint256 decimals)",
     "function symbol() public view returns (string symbol)",
 ]
+
+const gelato = new GelatoRelay()
 
 export interface TokenInfo {
     address: string,
@@ -47,6 +49,12 @@ const getToken = async(address: string) => {
         ECR20_ABI,
         provider
     )
+}
+
+export const getNextTxs = async(safe: string): Promise<SafeMultisigTransaction[]> => {
+    const currentNonce = await getCurrentNonce(safe)
+    const { results: txs } = await getSafeMultisigTxs(safe, { nonce: currentNonce })
+    return txs
 }
 
 export const getAvailableFeeToken = async(): Promise<string[]> => {
@@ -110,9 +118,9 @@ export const relayTx = async(account: string, data: string, feeToken: string) =>
 
 export const getStatus = async(taskId: string) => {
     try {
-        const response = await gelato.getTaskStatus(taskId)
-        console.log(response)
+        return await gelato.getTaskStatus(taskId)
     } catch (e) {
         console.error(e)
+        return undefined
     }
 }

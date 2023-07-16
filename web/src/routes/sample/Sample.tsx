@@ -5,13 +5,16 @@ import "./Sample.css";
 import { CircularProgress, FormControl, InputLabel, Select, MenuItem, TextField, Button, Typography } from '@mui/material';
 import { TokenInfo, getAvailableFeeToken, getMaxFeePerToken, getStatus, getTokenInfo, isKnownSamplePlugin, relayTx, updateMaxFeePerToken } from "../../logic/sample";
 import { getSafeInfo, isConnectedToSafe } from "../../logic/safeapp";
+import { SafeInfo } from '@safe-global/safe-apps-sdk';
+import { NextTxsList } from "./NextTxs";
+import { SafeMultisigTransaction } from "../../logic/services";
+import { RelayDialog } from "./RelayDialog";
 
 export const Sample: FunctionComponent<{}> = () => {
     const { pluginAddress } = useParams();
     const [ newMaxFee, setNewMaxFee ] = useState<string>("");
-    const [ dataToRelay, setDataToRelay ] = useState<string>("");
-    const [ taskId, setTaskId ] = useState<string>("");
-    const [ account, setAccount ] = useState<string|undefined>(undefined)
+    const [ txToRelay, setTxToRelay ] = useState<SafeMultisigTransaction|undefined>(undefined);
+    const [ safeInfo, setSafeInfo ] = useState<SafeInfo|undefined>(undefined)
     const [ feeTokens, setFeeTokens ] = useState<string[]>([])
     const [ maxFee, setMaxFee ] = useState<bigint | undefined>(undefined)
     const [ selectedFeeToken, setSelectedFeeToken ] = useState<string|undefined>(undefined)
@@ -23,7 +26,7 @@ export const Sample: FunctionComponent<{}> = () => {
                 if (!await isConnectedToSafe()) throw Error("Not connected to Safe")
                 const info = await getSafeInfo()
                 if (!isKnownSamplePlugin(info.chainId, pluginAddress!!)) throw Error("Unknown Plugin")
-                setAccount(info.safeAddress)
+                setSafeInfo(info)
             } catch (e) {
                 console.error(e)
             }
@@ -60,24 +63,24 @@ export const Sample: FunctionComponent<{}> = () => {
     }, [selectedFeeToken])
     useEffect(() => {
         setMaxFee(undefined)
-        if (account === undefined || selectedFeeToken === undefined) return
+        if (safeInfo === undefined || selectedFeeToken === undefined) return
         const fetchData = async() => {
             try {
-                const maxFee = await getMaxFeePerToken(account, selectedFeeToken)
+                const maxFee = await getMaxFeePerToken(safeInfo.safeAddress, selectedFeeToken)
                 setMaxFee(maxFee)
             } catch (e) {
                 console.error(e)
             }
         }
         fetchData();
-    }, [selectedFeeToken, account])
+    }, [selectedFeeToken, safeInfo])
     const updateMaxFee = useCallback(async (feeTokenInfo: TokenInfo, maxFeeInput: string) => {
         console.log("UPDATE")
         const targetMaxFee = parseUnits(maxFeeInput, feeTokenInfo.decimals)
         await updateMaxFeePerToken(feeTokenInfo.address, targetMaxFee)
     }, [])
 
-    const isLoading = account === undefined || maxFee === undefined || selectedFeeTokenInfo === undefined
+    const isLoading = safeInfo === undefined || maxFee === undefined || selectedFeeTokenInfo === undefined
     
     return (
         <div className="Sample">
@@ -97,18 +100,16 @@ export const Sample: FunctionComponent<{}> = () => {
                     </Select>
                 </FormControl>
             </>}
-            {account !== undefined && maxFee !== undefined && selectedFeeTokenInfo !== undefined && <>
+            {safeInfo !== undefined && maxFee !== undefined && selectedFeeTokenInfo !== undefined && <>
                 <p>Current max fee set: {formatUnits(maxFee, selectedFeeTokenInfo.decimals)} {selectedFeeTokenInfo.symbol}</p>
                 <Typography variant="body1">
                     New max fee ({selectedFeeTokenInfo.symbol}):<br />
                     <TextField id="standard-basic" label={`Max Fee (${selectedFeeTokenInfo.symbol})`} variant="standard" value={newMaxFee} onChange={(event) => setNewMaxFee(event.target.value)}/>
                 </Typography>
                 <Button onClick={() => updateMaxFee(selectedFeeTokenInfo, newMaxFee)}>Update</Button>
-                <TextField id="standard-basic" label={`Data to relay`} variant="standard" value={dataToRelay} onChange={(event) => setDataToRelay(event.target.value)}/>
-                <Button onClick={async() => { setTaskId(await relayTx(account, dataToRelay, selectedFeeTokenInfo.address))} }>Relay</Button>
-                <TextField id="standard-basic" label={`Task id`} variant="standard" value={taskId} onChange={(event) => setTaskId(event.target.value)}/>
-                <Button onClick={() => getStatus(taskId)}>Get Status</Button>
             </>}
+            {safeInfo && <NextTxsList safeInfo={safeInfo} handleRelay={(tx) => setTxToRelay(tx)}/>}
+            <RelayDialog tx={txToRelay} feeToken={selectedFeeToken} handleClose={() => setTxToRelay(undefined)} />
         </div>
     );
 };

@@ -10,3 +10,15 @@
   align-items: center;
   justify-content: start;
 }
+
+.NextTx {
+  width: 100%;
+  text-align: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
