@@ -27,3 +27,15 @@ yarn test
 ```bash
 yarn deploy <network>
 ```
+
+### Interact with registry
+
+- Register the Sample Plugin on the Registry
+```bash
+yarn register-plugin <network>
+```
+
+- List all Plugins in the Registry
+```bash
+yarn list-plugins <network>
+```

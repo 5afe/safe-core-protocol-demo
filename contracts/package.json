@@ -19,6 +19,8 @@
     "typechain": "TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
     "postinstall": "yarn typechain",
     "deploy": "hardhat deploy --network",
+    "register-plugin": "hardhat register-plugin --network",
+    "list-plugins": "hardhat list-plugins --network",
     "prepack": "yarn build"
   },
   "devDependencies": {
