@@ -41,13 +41,14 @@ export const submitTxs = async(txs: BaseTransaction[]): Promise<string> => {
 
 export const openSafeApp = async(appUrl: string) => {
     if (!isConnectedToSafe()) return
+    const safe = await getSafeInfo()
     const environmentInfo = await safeAppsSDK.safe.getEnvironmentInfo()
     const origin = environmentInfo.origin;
     const chainInfo = await safeAppsSDK.safe.getChainInfo()
     const networkPrefix = chainInfo.shortName
     if (origin?.length) {
         window.open(
-            `${origin}/share/safe-app?appUrl=${encodeURIComponent(appUrl)}&chain=${networkPrefix}`,
+            `${origin}/apps/open?safe=${networkPrefix}:${safe.safeAddress}&appUrl=${encodeURIComponent(appUrl)}`,
             '_blank',
         )
     }
