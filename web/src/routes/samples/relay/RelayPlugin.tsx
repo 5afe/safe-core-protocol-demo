@@ -1,16 +1,16 @@
 import { FunctionComponent, useCallback, useEffect, useState } from "react";
 import { formatUnits, parseUnits } from "ethers"
 import { useParams } from "react-router-dom";
-import "./Sample.css";
+import "./Relay.css";
 import { CircularProgress, FormControl, InputLabel, Select, MenuItem, TextField, Button, Typography } from '@mui/material';
-import { TokenInfo, getAvailableFeeToken, getMaxFeePerToken, getStatus, getTokenInfo, isKnownSamplePlugin, relayTx, updateMaxFeePerToken } from "../../logic/sample";
-import { getSafeInfo, isConnectedToSafe } from "../../logic/safeapp";
+import { TokenInfo, getAvailableFeeToken, getMaxFeePerToken, getTokenInfo, isKnownSamplePlugin, updateMaxFeePerToken } from "../../../logic/sample";
+import { getSafeInfo, isConnectedToSafe } from "../../../logic/safeapp";
 import { SafeInfo } from '@safe-global/safe-apps-sdk';
 import { NextTxsList } from "./NextTxs";
-import { SafeMultisigTransaction } from "../../logic/services";
+import { SafeMultisigTransaction } from "../../../logic/services";
 import { RelayDialog } from "./RelayDialog";
 
-export const Sample: FunctionComponent<{}> = () => {
+export const RelayPlugin: FunctionComponent<{}> = () => {
     const { pluginAddress } = useParams();
     const [ newMaxFee, setNewMaxFee ] = useState<string>("");
     const [ txToRelay, setTxToRelay ] = useState<SafeMultisigTransaction|undefined>(undefined);

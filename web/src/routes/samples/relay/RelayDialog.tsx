@@ -1,10 +1,9 @@
 import { FunctionComponent, useEffect, useState } from "react";
-import "./Sample.css";
+import "./Relay.css";
 import { CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Button, Typography } from '@mui/material';
-import { NATIVE_TOKEN, getNextTxs, getStatus, relayTx } from "../../logic/sample";
-import { SafeInfo } from '@safe-global/safe-apps-sdk';
-import { SafeMultisigTransaction } from "../../logic/services";
-import { buildExecuteTx } from "../../logic/safe";
+import { NATIVE_TOKEN, getStatus, relayTx } from "../../../logic/sample";
+import { SafeMultisigTransaction } from "../../../logic/services";
+import { buildExecuteTx } from "../../../logic/safe";
 
 enum Status {
     Loading,

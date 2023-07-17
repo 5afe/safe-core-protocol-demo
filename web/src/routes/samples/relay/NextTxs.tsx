@@ -1,9 +1,9 @@
 import { FunctionComponent, useEffect, useState } from "react";
-import "./Sample.css";
+import "./Relay.css";
 import { CircularProgress, Button, Typography } from '@mui/material';
-import { getNextTxs } from "../../logic/sample";
+import { getNextTxs } from "../../../logic/sample";
 import { SafeInfo } from '@safe-global/safe-apps-sdk';
-import { SafeMultisigTransaction } from "../../logic/services";
+import { SafeMultisigTransaction } from "../../../logic/services";
 
 enum Status {
     Loading,
