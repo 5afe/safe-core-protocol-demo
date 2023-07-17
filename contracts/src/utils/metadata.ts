@@ -1,5 +1,5 @@
-import { AbiCoder, isHexString, keccak256 } from "ethers";
-import { BasePlugin, MetadataProvider } from "../../typechain-types";
+import { AbiCoder, Interface, isHexString, keccak256 } from "ethers";
+import { BasePlugin, IMetadataProvider } from "../../typechain-types";
 import { getInstance } from "../utils/contracts";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
@@ -14,13 +14,26 @@ interface PluginMetadata {
 // const ProviderType_IPFS = 0n;
 // const ProviderType_URL = 1n;
 const ProviderType_Contract = 2n;
-// const ProviderType_Event = 3n;
+const ProviderType_Event = BigInt(3);
 
+const MetadataEvent: string[] = ["event Metadata(bytes32 indexed metadataHash, bytes data)"]
 const PluginMetadataType: string[] = ["string name", "string version", "bool requiresRootAccess", "string iconUrl", "string appUrl"];
 
 const loadPluginMetadataFromContract = async (hre: HardhatRuntimeEnvironment, provider: string, metadataHash: string): Promise<string> => {
-    const providerInstance = await getInstance<MetadataProvider>(hre, "MetadataProvider", provider);
+    const providerInstance = await getInstance<IMetadataProvider>(hre, "IMetadataProvider", provider);
     return await providerInstance.retrieveMetadata(metadataHash);
+};
+
+const loadPluginMetadataFromEvent = async (hre: HardhatRuntimeEnvironment, provider: string, metadataHash: string): Promise<string> => {
+    const eventInterface = new Interface(MetadataEvent)
+    const events = await hre.ethers.provider.getLogs({
+        address: provider,
+        topics: eventInterface.encodeFilterTopics("Metadata", [metadataHash])
+    })
+    if (events.length == 0) throw Error("Metadata not found");
+    const metadataEvent = events[events.length - 1];
+    const decodedEvent = eventInterface.decodeEventLog("Metadata", metadataEvent.data, metadataEvent.topics)
+    return decodedEvent.data;
 };
 
 const loadRawMetadata = async (hre: HardhatRuntimeEnvironment, plugin: BasePlugin, metadataHash: string): Promise<string> => {
@@ -28,6 +41,8 @@ const loadRawMetadata = async (hre: HardhatRuntimeEnvironment, plugin: BasePlugi
     switch (type) {
         case ProviderType_Contract:
             return loadPluginMetadataFromContract(hre, AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metadataHash);
+        case ProviderType_Event:
+            return loadPluginMetadataFromEvent(hre, AbiCoder.defaultAbiCoder().decode(["address"], source)[0], metadataHash);
         default:
             throw Error("Unsupported MetadataProviderType");
     }

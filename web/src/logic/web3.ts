@@ -1,9 +1,9 @@
 import { AbstractProvider, ethers } from "ethers"
-import { getSafeAppsProvider, isConnectToSafe } from "./safeapp"
+import { getSafeAppsProvider, isConnectedToSafe } from "./safeapp"
 import { PROTOCOL_PUBLIC_RPC } from "./constants"
 
 export const getProvider = async(): Promise<AbstractProvider> => {
-    if (await isConnectToSafe()) {
+    if (await isConnectedToSafe()) {
         console.log("Use SafeAppsProvider")
         return await getSafeAppsProvider()
     }

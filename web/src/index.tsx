@@ -8,15 +8,22 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import PluginList from './routes/plugins/PluginList';
+import { RelayPlugin } from './routes/samples/relay/RelayPlugin';
 
 const router = createHashRouter([
   {
     path: "/",
+    index: true,
     element: <Home />,
+    errorElement: <Home />,
   },
   {
     path: "/plugins",
     element: <PluginList />,
+  },
+  {
+    path: "/relay/:pluginAddress",
+    element: <RelayPlugin />,
   },
 ]);
 

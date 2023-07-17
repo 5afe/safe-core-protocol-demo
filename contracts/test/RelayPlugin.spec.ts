@@ -1,19 +1,20 @@
 import hre, { deployments } from "hardhat";
 import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { getSamplePlugin } from "../src/utils/contracts";
+import { getRelayPlugin } from "../src/utils/contracts";
 import { loadPluginMetadata } from "../src/utils/metadata";
 
 describe("SamplePlugin", async () => {
-    let user1: SignerWithAddress;
+    let relayer: SignerWithAddress;
 
     before(async () => {
-        [user1] = await hre.ethers.getSigners();
+        [relayer] = await hre.ethers.getSigners();
+        console.log("Relayer: ", relayer.address);
     });
 
     const setup = deployments.createFixture(async ({ deployments }) => {
         await deployments.fixture();
-        const plugin = await getSamplePlugin(hre);
+        const plugin = await getRelayPlugin(hre);
         return {
             plugin,
         };
@@ -21,8 +22,7 @@ describe("SamplePlugin", async () => {
 
     it("should be inititalized correctly", async () => {
         const { plugin } = await setup();
-        console.log(user1);
-        expect(await plugin.name()).to.be.eq("Sample Plugin");
+        expect(await plugin.name()).to.be.eq("Relay Plugin");
         expect(await plugin.version()).to.be.eq("1.0.0");
         expect(await plugin.requiresRootAccess()).to.be.false;
     });
@@ -30,11 +30,11 @@ describe("SamplePlugin", async () => {
     it("can retrieve metadata for module", async () => {
         const { plugin } = await setup();
         expect(await loadPluginMetadata(hre, plugin)).to.be.deep.eq({
-            name: "Sample Plugin",
+            name: "Relay Plugin",
             version: "1.0.0",
             requiresRootAccess: false,
             iconUrl: "",
-            appUrl: "",
+            appUrl: "https://5afe.github.io/safe-core-protocol-demo/#/relay/${plugin}",
         });
     });
 });

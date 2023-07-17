@@ -24,6 +24,7 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
+    "@gelatonetwork/relay-context": "^2.1.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
@@ -31,8 +32,8 @@
     "@nomicfoundation/hardhat-verify": "^1.0.0",
     "@openzeppelin/contracts": "^4.9.1",
     "@safe-global/mock-contract": "^4.0.0",
+    "@safe-global/safe-core-protocol": "^0.1.0-alpha.4",
     "@safe-global/safe-singleton-factory": "^1.0.14",
-    "@safe-global/safe-core-protocol": "^0.1.0-alpha.3",
     "@typechain/ethers-v6": "^0.4.0",
     "@typechain/hardhat": "^8.0.0",
     "@types/chai": "^4.2.0",

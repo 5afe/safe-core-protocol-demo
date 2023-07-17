@@ -2,7 +2,7 @@ import { ZeroAddress, EventLog } from "ethers";
 import { BaseTransaction } from '@safe-global/safe-apps-sdk';
 import { PluginMetadata, loadPluginMetadata } from "./metadata";
 import { getManager, getPlugin, getRegistry } from "./protocol";
-import { getSafeInfo, isConnectToSafe, submitTxs } from "./safeapp";
+import { getSafeInfo, isConnectedToSafe, submitTxs } from "./safeapp";
 import { isModuleEnabled, buildEnableModule } from "./safe";
 
 const SENTINEL_MODULES = "0x0000000000000000000000000000000000000001"
@@ -15,7 +15,7 @@ export interface PluginDetails {
 export const loadPluginDetails = async(pluginAddress: string): Promise<PluginDetails> => {
     const plugin = await getPlugin(pluginAddress)
     const metadata = await loadPluginMetadata(plugin)
-    if (!await isConnectToSafe()) return { metadata }
+    if (!await isConnectedToSafe()) return { metadata }
     const enabled = await isPluginEnabled(pluginAddress)
     return  { metadata, enabled }
 }
@@ -31,7 +31,7 @@ export const loadPlugins = async(filterFlagged: boolean = true): Promise<string[
 }
 
 export const isPluginEnabled = async(plugin: string) => {
-    if (!await isConnectToSafe()) throw Error("Not connected to a Safe")
+    if (!await isConnectedToSafe()) throw Error("Not connected to a Safe")
     const manager = await getManager()
     const safeInfo = await getSafeInfo()
     const pluginInfo = await manager.enabledPlugins(safeInfo.safeAddress, plugin)
@@ -39,7 +39,7 @@ export const isPluginEnabled = async(plugin: string) => {
 }
 
 export const loadEnabledPlugins = async(): Promise<string[]> => {
-    if (!await isConnectToSafe()) throw Error("Not connected to a Safe")
+    if (!await isConnectedToSafe()) throw Error("Not connected to a Safe")
     const manager = await getManager()
     const safeInfo = await getSafeInfo()
     const paginatedPlugins = await manager.getPluginsPaginated(SENTINEL_MODULES, 10, safeInfo.safeAddress)
@@ -56,7 +56,7 @@ const buildEnablePlugin = async(plugin: string, requiresRootAccess: boolean): Pr
 } 
 
 export const enablePlugin = async(plugin: string, requiresRootAccess: boolean) => {
-    if (!await isConnectToSafe()) throw Error("Not connected to a Safe")
+    if (!await isConnectedToSafe()) throw Error("Not connected to a Safe")
     const manager = await getManager()
     const managerAddress = await manager.getAddress()
     const info = await getSafeInfo()
@@ -81,7 +81,7 @@ const buildDisablePlugin = async(pointer: string, plugin: string): Promise<BaseT
 } 
 
 export const disablePlugin = async(plugin: string) => {
-    if (!await isConnectToSafe()) throw Error("Not connected to a Safe")
+    if (!await isConnectedToSafe()) throw Error("Not connected to a Safe")
     const manager = await getManager()
     const txs: BaseTransaction[] = []
     const enabledPlugins = await loadEnabledPlugins()

@@ -450,6 +450,13 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@gelatonetwork/relay-context@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@gelatonetwork/relay-context/-/relay-context-2.1.0.tgz#46eef1162c7dca16031baeb528edceca686d9a3e"
+  integrity sha512-Pisn66Haq1OEBqrj9t8aPS2B7qX1j/AI0mDZNczeAws8JMn7PhZXLKcWYleAWUitlzFS59w4qS3Y/l7/8oWEiw==
+  dependencies:
+    "@openzeppelin/contracts" "4.8.0"
+
 "@humanwhocodes/config-array@^0.11.10":
   version "0.11.10"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.10.tgz#5a3ffe32cc9306365fb3fd572596cd602d5e12d2"
@@ -778,6 +785,11 @@
     "@nomicfoundation/solidity-analyzer-win32-ia32-msvc" "0.1.1"
     "@nomicfoundation/solidity-analyzer-win32-x64-msvc" "0.1.1"
 
+"@openzeppelin/contracts@4.8.0":
+  version "4.8.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.0.tgz#6854c37df205dd2c056bdfa1b853f5d732109109"
+  integrity sha512-AGuwhRRL+NaKx73WKRNzeCxOCOCxpaqF+kp8TJ89QzAipSwZy/NoflkWaL9bywXFRhIzXt8j38sfF7KBKCPWLw==
+
 "@openzeppelin/contracts@^4.9.1":
   version "4.9.1"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.9.1.tgz#afa804d2c68398704b0175acc94d91a54f203645"
@@ -788,10 +800,10 @@
   resolved "https://registry.yarnpkg.com/@safe-global/mock-contract/-/mock-contract-4.0.0.tgz#8e1e17e93af5d4b343a6bb6cef8c1f513cb7a92e"
   integrity sha512-6ijStTgQI6JzYe8Nsc4j1VW4XQ89qCl7ZkRGxwwlxnaOMDYzVekwPACbg2kDDzhtJ4p8vSvE6ZroxSkvP7610A==
 
-"@safe-global/safe-core-protocol@^0.1.0-alpha.3":
-  version "0.1.0-alpha.3"
-  resolved "https://registry.yarnpkg.com/@safe-global/safe-core-protocol/-/safe-core-protocol-0.1.0-alpha.3.tgz#355b81283b4ce611aa651af76186b1cd91ea0f45"
-  integrity sha512-iXIaqOrPuJVkTyLHlnzxa5+/oicK43snL6iH/m1f7nFqySvUlXcV29MeS9b3S5a6k8r3cMX9IlmK6GpWk0tx4w==
+"@safe-global/safe-core-protocol@^0.1.0-alpha.4":
+  version "0.1.0-alpha.4"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-core-protocol/-/safe-core-protocol-0.1.0-alpha.4.tgz#a00622198458551c8cf4f339872939be5de0d233"
+  integrity sha512-d+2qnyqf3WdERlxwxZAxxTk0N0MYfr+ICqIem78rDYKlRYxbnM7AKlXXSiYJbPNADZ49cakPmib59Rs0IK93Kg==
 
 "@safe-global/safe-singleton-factory@^1.0.14":
   version "1.0.14"
