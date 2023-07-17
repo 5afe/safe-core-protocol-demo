@@ -86,7 +86,7 @@ contract RelayPlugin is BasePluginWithEventMetadata {
 
         relayCall(address(safe), data);
         // We use the hash of the tx to relay has a nonce as this is unique
-        uint256 nonce = uint256(keccak256(abi.encode(this, manager, safe, data, block.number)));
+        uint256 nonce = uint256(keccak256(abi.encode(this, manager, safe, data)));
         payFee(manager, safe, nonce);
     }
 }

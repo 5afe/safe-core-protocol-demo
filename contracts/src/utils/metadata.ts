@@ -28,7 +28,9 @@ const loadPluginMetadataFromEvent = async (hre: HardhatRuntimeEnvironment, provi
     const eventInterface = new Interface(MetadataEvent)
     const events = await hre.ethers.provider.getLogs({
         address: provider,
-        topics: eventInterface.encodeFilterTopics("Metadata", [metadataHash])
+        topics: eventInterface.encodeFilterTopics("Metadata", [metadataHash]),
+        fromBlock: "earliest",
+        toBlock: "latest"
     })
     if (events.length == 0) throw Error("Metadata not found");
     const metadataEvent = events[events.length - 1];

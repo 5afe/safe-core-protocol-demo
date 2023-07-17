@@ -1,4 +1,4 @@
-import { ethers, BigNumberish, getAddress } from "ethers"
+import { ethers, BigNumberish, getAddress, ZeroAddress } from "ethers"
 import { getProvider } from "./web3";
 import { BaseTransaction } from '@safe-global/safe-apps-sdk';
 import { SafeMultisigConfirmation, SafeMultisigTransaction } from "./services";
@@ -82,13 +82,13 @@ const getExecuteTxData = async (
     return (await safe.execTransaction.populateTransaction(
         safeTx.to,
         safeTx.value,
-        safeTx.data,
+        safeTx.data || "0x",
         safeTx.operation,
         safeTx.safeTxGas,
         safeTx.baseGas,
         safeTx.gasPrice,
         safeTx.gasToken,
-        safeTx.refundReceiver,
+        safeTx.refundReceiver || ZeroAddress,
         buildSignatureBytes(safeTx.confirmations!!)
     )).data;
 };
