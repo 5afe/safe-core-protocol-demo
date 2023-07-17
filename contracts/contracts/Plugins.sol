@@ -10,7 +10,6 @@ import {_getFeeCollectorRelayContext, _getFeeTokenRelayContext, _getFeeRelayCont
 address constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
 contract RelayPlugin is BasePluginWithEventMetadata {
-
     event MaxFeeUpdated(address indexed account, address indexed feeToken, uint256 maxFee);
 
     error FeeTooHigh(address feeToken, uint256 fee);
