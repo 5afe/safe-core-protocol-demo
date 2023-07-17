@@ -54,7 +54,7 @@ export const RelayDialog: FunctionComponent<{ tx: SafeMultisigTransaction|undefi
                 // TODO: remove fallback to native fee token and enforce that token is selected
                 const txId = await relayTx(account, data, feeToken || NATIVE_TOKEN)
                 let retries = 0;
-                while(retries < 10) {
+                while(retries < 60) {
                     const relayStatus = await getStatus(txId)
                     console.log({relayStatus})
                     /*
@@ -75,7 +75,7 @@ export const RelayDialog: FunctionComponent<{ tx: SafeMultisigTransaction|undefi
                         return
                     } else {
                         retries ++;
-                        await sleep(2000)
+                        await sleep(5000)
                     }
                 }
                 setStatus(Status.Error)
