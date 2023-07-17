@@ -1,5 +1,5 @@
 import { BaseContract } from "ethers";
-import { BasePlugin, SamplePlugin, TestSafeProtocolRegistryUnrestricted } from "../../typechain-types";
+import { BasePlugin, RelayPlugin, TestSafeProtocolRegistryUnrestricted } from "../../typechain-types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { getProtocolRegistryAddress } from "./protocol";
 
@@ -14,5 +14,5 @@ export const getSingleton = async <T extends BaseContract>(hre: HardhatRuntimeEn
 };
 
 export const getPlugin = (hre: HardhatRuntimeEnvironment, address: string) => getInstance<BasePlugin>(hre, "BasePlugin", address);
-export const getSamplePlugin = (hre: HardhatRuntimeEnvironment) => getSingleton<SamplePlugin>(hre, "SamplePlugin");
+export const getRelayPlugin = (hre: HardhatRuntimeEnvironment) => getSingleton<RelayPlugin>(hre, "RelayPlugin");
 export const getRegistry = async (hre: HardhatRuntimeEnvironment) => getInstance<TestSafeProtocolRegistryUnrestricted>(hre, "TestSafeProtocolRegistryUnrestricted", await getProtocolRegistryAddress(hre));

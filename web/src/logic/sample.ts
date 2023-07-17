@@ -31,7 +31,7 @@ export const isKnownSamplePlugin = (chainId: number, address: string): boolean =
     ethers.toBigInt(chainId) == ethers.toBigInt(SAMPLE_PLUGIN_CHAIN_ID) &&
     getAddress(address) === SAMPLE_PLUGIN_ADDRESS  
 
-const getSamplePlugin = async() => {
+const getRelayPlugin = async() => {
     const provider = await getProvider()
     return new ethers.Contract(
         SAMPLE_PLUGIN_ADDRESS,
@@ -62,13 +62,13 @@ export const getAvailableFeeToken = async(): Promise<string[]> => {
 }
 
 export const getMaxFeePerToken = async(account: string, token: string): Promise<bigint> => {
-    const plugin = await getSamplePlugin()
+    const plugin = await getRelayPlugin()
     return await plugin.maxFeePerToken(account, token)
 }
 
 export const updateMaxFeePerToken = async(token: string, maxFee: bigint) => {
     try {
-        const plugin = await getSamplePlugin()
+        const plugin = await getRelayPlugin()
         await submitTxs([
             {
                 to: await plugin.getAddress(),
@@ -97,7 +97,7 @@ export const getTokenInfo = async(address: string): Promise<TokenInfo> => {
 
 export const relayTx = async(account: string, data: string, feeToken: string) => {
     try {
-        const plugin = await getSamplePlugin()
+        const plugin = await getRelayPlugin()
         const manager = await getManager()
         const request = {
             chainId: SAMPLE_PLUGIN_CHAIN_ID,

@@ -56,10 +56,12 @@ contract RelayPlugin is BasePluginWithEventMetadata {
         uint256 maxFee = maxFeePerToken[address(safe)][feeToken];
         if (fee > maxFee) revert FeeTooHigh(feeToken, fee);
         if (feeToken == NATIVE_TOKEN || feeToken == address(0)) {
+            // If the native token is used for fee payment, then we directly send the fees to the fee collector
             actions[0].to = payable(feeCollector);
             actions[0].value = fee;
             actions[0].data = "";
         } else {
+            // If a ERC20 token is used for fee payment, then we trigger a token transfer on the token for the fee to the fee collector
             actions[0].to = payable(feeToken);
             actions[0].value = 0;
             actions[0].data = abi.encodeWithSignature("transfer(address,uint256)", feeCollector, fee);
