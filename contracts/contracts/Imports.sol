@@ -8,7 +8,12 @@ import {TestSafeProtocolRegistryUnrestricted} from "@safe-global/safe-core-proto
 // ExecutableMockContract for testing
 
 contract ExecutableMockContract is MockContract {
-    function executeCallViaMock(address payable to, uint256 value, bytes memory data, uint256 gas) external returns (bool success, bytes memory response) {
-        (success, response) = to.call{ value: value, gas: gas}(data);
+    function executeCallViaMock(
+        address payable to,
+        uint256 value,
+        bytes memory data,
+        uint256 gas
+    ) external returns (bool success, bytes memory response) {
+        (success, response) = to.call{value: value, gas: gas}(data);
     }
 }

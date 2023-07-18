@@ -2,7 +2,7 @@ import { FunctionComponent, useCallback, useEffect, useState } from "react";
 import { formatUnits, parseUnits } from "ethers"
 import { useParams } from "react-router-dom";
 import "./Relay.css";
-import { CircularProgress, FormControl, InputLabel, Select, MenuItem, TextField, Button, Typography } from '@mui/material';
+import { CircularProgress, FormControl, InputLabel, Select, MenuItem, TextField, Button, Typography, Card } from '@mui/material';
 import { TokenInfo, getAvailableFeeToken, getMaxFeePerToken, getTokenInfo, isKnownSamplePlugin, updateMaxFeePerToken } from "../../../logic/sample";
 import { getSafeInfo, isConnectedToSafe } from "../../../logic/safeapp";
 import { SafeInfo } from '@safe-global/safe-apps-sdk';
@@ -84,30 +84,32 @@ export const RelayPlugin: FunctionComponent<{}> = () => {
     
     return (
         <div className="Sample">
-            {isLoading && <CircularProgress />}
-            {feeTokens.length > 0 && selectedFeeToken !== undefined && <>
-                <FormControl fullWidth>
-                    <InputLabel id="demo-simple-select-label">Fee Token</InputLabel>
-                    <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={selectedFeeToken}
-                        label="Fee Token"
-                        color="primary"
-                        onChange={(selected) => setSelectedFeeToken(selected.target.value)}
-                    >
-                        {feeTokens.map((token) => <MenuItem value={token}>{token}</MenuItem>)}
-                    </Select>
-                </FormControl>
-            </>}
-            {safeInfo !== undefined && maxFee !== undefined && selectedFeeTokenInfo !== undefined && <>
-                <p>Current max fee set: {formatUnits(maxFee, selectedFeeTokenInfo.decimals)} {selectedFeeTokenInfo.symbol}</p>
-                <Typography variant="body1">
-                    New max fee ({selectedFeeTokenInfo.symbol}):<br />
-                    <TextField id="standard-basic" label={`Max Fee (${selectedFeeTokenInfo.symbol})`} variant="standard" value={newMaxFee} onChange={(event) => setNewMaxFee(event.target.value)}/>
-                </Typography>
-                <Button onClick={() => updateMaxFee(selectedFeeTokenInfo, newMaxFee)}>Update</Button>
-            </>}
+            <Card className="Settings">
+                {isLoading && <CircularProgress />}
+                {feeTokens.length > 0 && selectedFeeToken !== undefined && <>
+                    <FormControl fullWidth>
+                        <InputLabel id="demo-simple-select-label">Fee Token</InputLabel>
+                        <Select
+                            labelId="demo-simple-select-label"
+                            id="demo-simple-select"
+                            value={selectedFeeToken}
+                            label="Fee Token"
+                            color="primary"
+                            onChange={(selected) => setSelectedFeeToken(selected.target.value)}
+                        >
+                            {feeTokens.map((token) => <MenuItem value={token}>{token}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                </>}
+                {safeInfo !== undefined && maxFee !== undefined && selectedFeeTokenInfo !== undefined && <>
+                    <p>Current max fee set: {formatUnits(maxFee, selectedFeeTokenInfo.decimals)} {selectedFeeTokenInfo.symbol}</p>
+                    <Typography variant="body1">
+                        New max fee ({selectedFeeTokenInfo.symbol}):<br />
+                        <TextField id="standard-basic" label={`Max Fee (${selectedFeeTokenInfo.symbol})`} variant="standard" value={newMaxFee} onChange={(event) => setNewMaxFee(event.target.value)}/>
+                    </Typography>
+                    <Button onClick={() => updateMaxFee(selectedFeeTokenInfo, newMaxFee)}>Update</Button>
+                </>}   
+                </Card>
             {safeInfo && <NextTxsList safeInfo={safeInfo} handleRelay={(tx) => setTxToRelay(tx)}/>}
             <RelayDialog tx={txToRelay} feeToken={selectedFeeToken} handleClose={() => setTxToRelay(undefined)} />
         </div>
