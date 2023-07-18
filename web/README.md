@@ -14,6 +14,8 @@ This web app demonstrates how to interact with the Registry, the Manager and the
 
 - [Relay Plugin](../src/routes/samples/relay) - A plugin that allows to relay Safe transactions and pay a fee for it which is capped by the user.
 
+Note: If more examples are added or the code is updated to a new plugin, make sure to replace all hardcoded addresses (i.e. in the `sample.ts` file)
+
 ## Available Scripts
 
 In the project directory, you can run:
