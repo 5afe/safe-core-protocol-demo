@@ -6,7 +6,7 @@ import "./Plugins.css";
 import { PluginMetadata } from "../../logic/metadata";
 import { PluginDetails, disablePlugin, enablePlugin, loadPluginDetails } from "../../logic/plugins";
 import { openSafeApp } from "../../logic/safeapp";
-import { Button } from '@mui/material';
+import { Button, Card, Tooltip } from '@mui/material';
 
 type PluginMetaProps = {
     metadata: PluginMetadata;
@@ -50,12 +50,12 @@ export const Plugin: FunctionComponent<PluginProps> = ({ address }) => {
         }
     }, [details])
     return (
-        <div className="Plugin">
-            <img className="AddressIcon" src={blocky} />
+        <Card className="Plugin">
+            <Tooltip title={address}><img className="AddressIcon" src={blocky} /></Tooltip>
             <div className="Plugin-title">{!details ? "Loading Metadata" : <PluginMeta metadata={details.metadata} />}</div>
             {details?.metadata?.requiresRootAccess == true && <WarningIcon color="warning" />}
-            {(details?.metadata?.appUrl?.length ?? 0) > 0 && <OpenInNewIcon onClick={() => openSafeApp(details?.metadata?.appUrl!!)} />}
-            {details?.enabled != undefined && <Button onClick={handleToggle}>{details?.enabled ? "Remove" : "Add"}</Button>}
-        </div>
+            {details?.enabled != undefined && <Button className="Plugin-toggle" onClick={handleToggle}>{details?.enabled ? "Disable" : "Enable"}</Button>}
+            {(details?.metadata?.appUrl?.length ?? 0) > 0 && <OpenInNewIcon className="Plugin-link" onClick={() => openSafeApp(details?.metadata?.appUrl!!)} />}
+        </Card>
     );
 };

@@ -11,8 +11,23 @@
   justify-content: start;
 }
 
-.NextTx {
-  width: 100%;
+.Settings {
+  width: calc(min(calc(100% - 48px), 600px) - 16px);
+  margin: 8px;
+  padding: 8px;
+  text-align: start;
+  font-size: 16pt;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.Notice {
+  width: calc(min(calc(100% - 48px), 600px) - 16px);
+  margin: 8px;
+  padding: 8px;
   text-align: center;
   font-size: calc(10px + 2vmin);
   color: white;
@@ -20,5 +35,19 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  display: flex;
+}
+
+.NextTxCard {
+  width: calc(min(calc(100% - 48px), 600px) - 16px);
+  margin: 8px;
+  padding: 8px;
+  text-align: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   display: flex;
 }
