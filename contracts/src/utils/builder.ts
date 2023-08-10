@@ -10,7 +10,7 @@ export const buildSingleTx = (address: AddressLike, value: bigint, data: string,
             },
         ],
         nonce: nonce,
-        metaHash: metaHash,
+        metadataHash: metaHash,
     };
 };
 
@@ -22,6 +22,6 @@ export const buildRootTx = (address: AddressLike, value: bigint, data: string, n
             data: data,
         },
         nonce: nonce,
-        metaHash: metaHash,
+        metadataHash: metaHash,
     };
 };
