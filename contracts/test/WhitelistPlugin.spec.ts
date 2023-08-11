@@ -60,7 +60,7 @@ describe("WhitelistPlugin", async () => {
             .withArgs(user1.address);
     });
 
-    it("Should not allow non-whitelist address to execute transaction", async () => {
+    it("Should not allow calls to non-whitelist address", async () => {
         const { plugin, safe, manager } = await setup();
 
         const safeTx = buildSingleTx(user3.address, 0n, "0x", 0n, hre.ethers.randomBytes(32));
@@ -70,10 +70,10 @@ describe("WhitelistPlugin", async () => {
         ).to.be.revertedWithCustomError(plugin, "AddressNotWhiteListed");
     });
 
-    it("Should allow whitelisted address to execute transaction", async () => {
+    it("Should allow to execute transaction to whitelisted address", async () => {
         const { plugin, safe, manager } = await setup();
         const safeAddress = await safe.getAddress();
-        const data = plugin.interface.encodeFunctionData("addToWhitelist", [user1.address]);
+        const data = plugin.interface.encodeFunctionData("addToWhitelist", [user3.address]);
         await safe.exec(await plugin.getAddress(), 0, data);
 
         const safeTx = buildSingleTx(user3.address, 0n, "0x", 0n, ZeroHash);
@@ -86,23 +86,22 @@ describe("WhitelistPlugin", async () => {
         expect(await mockInstance.invocationCountForMethod(expectedData)).to.be.eq(1);
     });
 
-    it("Should not allow removed address from whitelist to execute transaction", async () => {
+    it("Should not allow to execute transaction after removing address from whitelist ", async () => {
         const { plugin, safe, manager } = await setup();
         const safeAddress = await safe.getAddress();
-        const data = plugin.interface.encodeFunctionData("addToWhitelist", [user1.address]);
+        const data = plugin.interface.encodeFunctionData("addToWhitelist", [user3.address]);
         await safe.exec(await plugin.getAddress(), 0, data);
 
-        const data2 = plugin.interface.encodeFunctionData("removeFromWhitelist", [user1.address]);
+        const data2 = plugin.interface.encodeFunctionData("removeFromWhitelist", [user3.address]);
         expect(await safe.exec(await plugin.getAddress(), 0, data2))
             .to.emit(plugin, "AddressRemovedFromWhitelist")
             .withArgs(user1.address);
 
         const safeTx = buildSingleTx(user3.address, 0n, "0x", 0n, ZeroHash);
 
-        await expect(plugin.connect(user1).executeFromPlugin(manager.target, safeAddress, safeTx)).to.be.revertedWithCustomError(
-            plugin,
-            "AddressNotWhiteListed",
-        );
+        await expect(plugin.connect(user1).executeFromPlugin(manager.target, safeAddress, safeTx))
+            .to.be.revertedWithCustomError(plugin, "AddressNotWhiteListed")
+            .withArgs(user3.address);
 
         const mockInstance = await getInstance<MockContract>(hre, "MockContract", manager.target);
         expect(await mockInstance.invocationCount()).to.be.eq(0);

@@ -3,8 +3,9 @@ pragma solidity ^0.8.18;
 import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
 import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/interfaces/Integrations.sol";
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
-import {SafeTransaction, SafeRootAccess} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
+import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
+import {OwnerManager} from "@safe-global/safe-contracts/contracts/base/OwnerManager.sol";
 
 /**
  * @title WhitelistPlugin maintains a mapping that stores information about accounts that are
@@ -20,6 +21,7 @@ contract WhitelistPlugin is BasePluginWithEventMetadata {
     event AddressRemovedFromWhitelist(address indexed account);
 
     error AddressNotWhiteListed(address account);
+    error CallerIsNotOwner(address safe, address caller);
 
     constructor()
         BasePluginWithEventMetadata(
@@ -38,8 +40,16 @@ contract WhitelistPlugin is BasePluginWithEventMetadata {
         ISafe safe,
         SafeTransaction calldata safetx
     ) external returns (bytes[] memory data) {
-        if (!whitelistedAddresses[address(safe)][msg.sender]) {
-            revert AddressNotWhiteListed(msg.sender);
+        address safeAddress = address(safe);
+        // Only Safe owners are allowed to execute transactions to whitelisted accounts.
+        if (!(OwnerManager(safeAddress).isOwner(msg.sender))) {
+            revert CallerIsNotOwner(safeAddress, msg.sender);
+        }
+
+        SafeProtocolAction[] memory actions = safetx.actions;
+        uint256 length = actions.length;
+        for (uint256 i = 0; i < length; i++) {
+            if (!whitelistedAddresses[safeAddress][actions[i].to]) revert AddressNotWhiteListed(actions[i].to);
         }
         // Test: Any tx that updates whitelist of this contract should be blocked
         (data) = manager.executeTransaction(safe, safetx);
