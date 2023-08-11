@@ -5,7 +5,14 @@ import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/int
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
-import {OwnerManager} from "@safe-global/safe-contracts/contracts/base/OwnerManager.sol";
+
+/**
+ * @title OwnerManager
+ * @dev This interface is defined for use in WhitelistPlugin contract.
+ */
+interface OwnerManager {
+    function isOwner(address owner) external view returns (bool);
+}
 
 /**
  * @title WhitelistPlugin maintains a mapping that stores information about accounts that are
