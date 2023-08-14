@@ -74,7 +74,7 @@ contract WhitelistPlugin is BasePluginWithEventMetadata {
 
     /**
      * @notice Removes an account from whitelist mapping.
-     *         The caller H be a Safe account.
+     *         The caller should be a Safe account.
      * @param account address of the account to be removed from the whitelist
      */
     function removeFromWhitelist(address account) external {
