@@ -63,7 +63,7 @@ contract WhitelistPlugin is BasePluginWithEventMetadata {
     }
 
     /**
-     * @notice Removes an account from whitelist mapping.
+     * @notice Adds an account to whitelist mapping.
      *         The caller should be a Safe account.
      * @param account address of the account to be whitelisted
      */
