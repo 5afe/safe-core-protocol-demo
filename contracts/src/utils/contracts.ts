@@ -1,9 +1,9 @@
-import { BaseContract } from "ethers";
-import { BasePlugin, RelayPlugin, TestSafeProtocolRegistryUnrestricted } from "../../typechain-types";
+import { Addressable, BaseContract } from "ethers";
+import { BasePlugin, RelayPlugin, TestSafeProtocolRegistryUnrestricted, WhitelistPlugin } from "../../typechain-types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { getProtocolRegistryAddress } from "./protocol";
+import { getProtocolManagerAddress, getProtocolRegistryAddress } from "./protocol";
 
-export const getInstance = async <T extends BaseContract>(hre: HardhatRuntimeEnvironment, name: string, address: string): Promise<T> => {
+export const getInstance = async <T extends BaseContract>(hre: HardhatRuntimeEnvironment, name: string, address: string | Addressable): Promise<T> => {
     // TODO: this typecasting should be refactored
     return (await hre.ethers.getContractAt(name, address)) as unknown as T;
 };
@@ -16,3 +16,4 @@ export const getSingleton = async <T extends BaseContract>(hre: HardhatRuntimeEn
 export const getPlugin = (hre: HardhatRuntimeEnvironment, address: string) => getInstance<BasePlugin>(hre, "BasePlugin", address);
 export const getRelayPlugin = (hre: HardhatRuntimeEnvironment) => getSingleton<RelayPlugin>(hre, "RelayPlugin");
 export const getRegistry = async (hre: HardhatRuntimeEnvironment) => getInstance<TestSafeProtocolRegistryUnrestricted>(hre, "TestSafeProtocolRegistryUnrestricted", await getProtocolRegistryAddress(hre));
+export const getWhiteListPlugin = async (hre: HardhatRuntimeEnvironment) => getSingleton<WhitelistPlugin>(hre, "WhitelistPlugin");
