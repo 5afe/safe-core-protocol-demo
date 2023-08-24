@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/interfaces/Integrations.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 enum MetadataProviderType {
     IPFS,
@@ -55,6 +56,10 @@ abstract contract BasePlugin is ISafeProtocolPlugin {
         version = metadata.version;
         requiresRootAccess = metadata.requiresRootAccess;
         metadataHash = keccak256(metadata.encode());
+    }
+
+    function supportsInterface(bytes4 interfaceId) external view override returns (bool) {
+        return interfaceId == type(ISafeProtocolPlugin).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
 
