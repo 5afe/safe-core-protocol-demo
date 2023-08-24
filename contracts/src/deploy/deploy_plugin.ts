@@ -5,7 +5,7 @@ import { ZeroAddress } from "ethers";
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
-    const { deployer } = await getNamedAccounts();
+    const { deployer, owner } = await getNamedAccounts();
     const { deploy } = deployments;
 
     // execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
@@ -24,6 +24,13 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy("WhitelistPlugin", {
         from: deployer,
         args: [],
+        log: true,
+        deterministicDeployment: true,
+    });
+
+    await deploy("RecoveryPlugin", {
+        from: deployer,
+        args: [owner],
         log: true,
         deterministicDeployment: true,
     });
