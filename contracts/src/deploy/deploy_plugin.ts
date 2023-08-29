@@ -28,12 +28,13 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         deterministicDeployment: true,
     });
 
-    await deploy("RecoveryPlugin", {
+    await deploy("RecoveryWithDelayPlugin", {
         from: deployer,
         args: [owner],
         log: true,
         deterministicDeployment: true,
     });
+
 };
 
 deploy.tags = ["plugins"];

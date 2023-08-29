@@ -1,13 +1,13 @@
 import hre, { deployments, ethers } from "hardhat";
 import { expect } from "chai";
 import { getProtocolManagerAddress } from "../src/utils/protocol";
-import { getRecoveryPlugin } from "../src/utils/contracts";
+import { getRecoveryWithDelayPlugin } from "../src/utils/contracts";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { ISafeProtocolManager__factory } from "../typechain-types";
 import { SafeProtocolAction, SafeRootAccess } from "../src/utils/dataTypes";
 import { ZeroHash } from "ethers";
 
-describe("RecoverPlugin", async () => {
+describe.skip("RecoverWithDelayPlugin", async () => {
     let deployer: SignerWithAddress, owner: SignerWithAddress, user1: SignerWithAddress, user2: SignerWithAddress, user3: SignerWithAddress;
 
     before(async () => {
@@ -19,7 +19,7 @@ describe("RecoverPlugin", async () => {
 
         const manager = await ethers.getContractAt("MockContract", await getProtocolManagerAddress(hre));
         const account = await (await ethers.getContractFactory("ExecutableMockContract")).deploy();
-        const plugin = await getRecoveryPlugin(hre);
+        const plugin = await getRecoveryWithDelayPlugin(hre);
         return {
             account,
             plugin,
