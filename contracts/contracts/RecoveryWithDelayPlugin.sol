@@ -38,7 +38,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
     // Events
     event NewRecoveryAnnouncement(address indexed account, bytes32 txHash);
-    event RecoveryAnnouncementCancelled(bytes32 txHash);
+    event RecoveryAnnouncementCancelled(address indexed account, bytes32 txHash);
     event OwnerReplaced(address indexed account, address oldowner, address newOwner);
 
     // Errors
@@ -215,7 +215,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
         delete announcements[txHash];
 
-        emit RecoveryAnnouncementCancelled(txHash);
+        emit RecoveryAnnouncementCancelled(account, txHash);
     }
 
     /**
