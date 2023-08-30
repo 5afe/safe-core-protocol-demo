@@ -186,7 +186,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     }
 
     /**
-     * @notice Cancels a recovery announcement for a Safe account. This is an private function that is called by a recoverer or an account.
+     * @notice Cancels a recovery announcement for a Safe account. This is a private function that is called by a recoverer or an account.
      * @param manager Address of the manager contract.
      * @param account Address of the safe account.
      * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
