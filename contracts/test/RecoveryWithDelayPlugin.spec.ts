@@ -33,8 +33,6 @@ describe("RecoverWithDelayPlugin", async () => {
         };
     });
 
-    it("Should validate Domain separator type hash", async () => {});
-
     it("Should revert due to past execution time", async () => {
         const { account, plugin, manager } = await setup();
         await expect(
@@ -68,7 +66,9 @@ describe("RecoverWithDelayPlugin", async () => {
         const managerInterface = ISafeProtocolManager__factory.createInterface();
 
         expect(
-            await plugin.connect(user1).executeFromPlugin(manager.target, account.target, user1.address, user2.address, user3.address, 0n),
+            await plugin
+                .connect(deployer)
+                .executeFromPlugin(manager.target, account.target, user1.address, user2.address, user3.address, 0n),
         )
             .to.emit(plugin, "OwnerReplaced")
             .withArgs(account.target, user2.address, user3.address);

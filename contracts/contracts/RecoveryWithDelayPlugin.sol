@@ -29,7 +29,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     // Contract storage
 
     // Only recoverer can initiate recovery process
-    address immutable recoverer;
+    address public immutable recoverer;
 
     // Transaction Hash -> Announcement
     mapping(bytes32 => Announcement) public announcements;
@@ -120,7 +120,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
      */
     function getChainId() public view returns (uint256) {
         uint256 id;
-        // solium-disable-next-line security/no-inline-assembly
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             id := chainid()
         }
