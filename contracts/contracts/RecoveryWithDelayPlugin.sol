@@ -9,6 +9,9 @@ import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/
 /**
  * @title RecoveryWithDelayPlugin - A contract compatible with Safe{Core} Protocol that replaces a specified owner for a Safe by a non-owner account.
  * @notice This contract should be listed in a Registry and enabled as a Plugin for an account through a Manager to be able to intiate recovery mechanism.
+ * @dev The recovery process is initiated by a recoverer account. The recoverer account is set during the contract deployment in the constructor and cannot be updated.
+ *      The recoverer account can initiate the recovery process by calling the createAnnouncement function and later when the delay is over, any account can execute
+ *      complete the recovery process by calling the executeFromPlugin function.
  * @author Akshay Patel - @akshay-ap
  */
 contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
@@ -35,8 +38,8 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     mapping(bytes32 => Announcement) public announcements;
 
     // Events
-    event NewRecoveryAnnouncement();
-    event RecoveryAnnouncementCancelled();
+    event NewRecoveryAnnouncement(address account, bytes32 txHash);
+    event RecoveryAnnouncementCancelled(bytes32 txHash);
     event OwnerReplaced(address account, address oldowner, address newOwner);
 
     // Errors
@@ -187,7 +190,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         }
 
         announcements[txHash] = Announcement(executionTime, validityDuration, false);
-        emit NewRecoveryAnnouncement();
+        emit NewRecoveryAnnouncement(account, txHash);
     }
 
     /**
@@ -253,7 +256,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
         delete announcements[txHash];
 
-        emit RecoveryAnnouncementCancelled();
+        emit RecoveryAnnouncementCancelled(txHash);
     }
 
     /**

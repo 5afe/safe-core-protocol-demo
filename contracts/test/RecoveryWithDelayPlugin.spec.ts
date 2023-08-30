@@ -175,6 +175,8 @@ describe("RecoverWithDelayPlugin", async () => {
         const { account, plugin, manager } = await setup();
 
         const timestamp = (await ethers.provider.getBlock("latest"))?.timestamp || 0;
+
+        const txHash = await plugin.getTransactionHash(manager.target, account.target, user1.address, user2.address, user3.address, 0);
         expect(
             await plugin
                 .connect(recoverer)
@@ -188,7 +190,9 @@ describe("RecoverWithDelayPlugin", async () => {
                     timestamp + 10,
                     validityDuration,
                 ),
-        );
+        )
+            .to.emit(plugin, "NewRecoveryAnnouncement")
+            .withArgs(account.target, txHash);
 
         await expect(
             plugin
