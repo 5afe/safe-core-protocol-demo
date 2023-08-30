@@ -7,7 +7,7 @@ import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
 import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 
 /**
- * @title RecoveryPlugin - A contract compatible with Safe{Core} Protocol that replaces a specified owner for a Safe by a non-owner account.
+ * @title RecoveryWithDelayPlugin - A contract compatible with Safe{Core} Protocol that replaces a specified owner for a Safe by a non-owner account.
  * @notice This contract should be listed in a Registry and enabled as a Plugin for an account through a Manager to be able to intiate recovery mechanism.
  * @author Akshay Patel - @akshay-ap
  */
@@ -22,7 +22,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
     struct Announcement {
         uint64 executionTime; // Block time in seconds when the announced transaction can be executed
-        uint16 validityDurationMin; // Duration in minutes the announcement is valid after delay is over (0 is valid forever)
+        uint64 validityDuration; // Duration in seconds the announcement is valid after delay is over (0 is valid forever)
         bool executed; // Flag if the announced transaction was executed
     }
 
@@ -36,7 +36,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
     // Events
     event NewRecoveryAnnouncement();
-    event RecoveryAccouncementCancelled();
+    event RecoveryAnnouncementCancelled();
     event OwnerReplaced(address account, address oldowner, address newOwner);
 
     // Errors
@@ -44,9 +44,10 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     error NonceAlreadyUsed(uint256 nonce);
     error TransactionAlreadyExecuted(bytes32 txHash);
     error TransactionAlreadyScheduled(bytes32 txHash);
-    error ExecutiontimeShouldBeInFuture();
+    error ExecutionTimeShouldBeInFuture();
     error TransactionNotFound(bytes32 txHash);
     error TransactionExecutionNotAllowedYet(bytes32 txHash);
+    error TransactionExecutionValidityExpired(bytes32 txHash);
 
     constructor(
         address _recoverer
@@ -66,12 +67,16 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     }
 
     /**
-     * @notice Executes a Safe transaction if the caller is whitelisted for the given Safe account.
+     * @notice Executes a Safe transaction that swaps owner with a new owner. This allows a Safe account to be recovered
+     *         if the owner's private key is lost. A safe account must set manager as a Module on a safe and enable this
+     *         contract as Plugin on a Safe.
      * @param manager Address of the Safe{Core} Protocol Manager.
      * @param safe Safe account whose owner has to be recovered
      * @param prevOwner Owner that pointed to the owner to be replaced in the linked list
      * @param oldOwner Owner address to be replaced.
      * @param newOwner New owner address.
+     * @param nonce A unique identifier used to uniquely identify a recovery transaction.
+     * @return data Bytes returned from the manager contract.
      */
     function executeFromPlugin(
         ISafeProtocolManager manager,
@@ -82,13 +87,21 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         uint256 nonce
     ) external returns (bytes memory data) {
         bytes32 txHash = getTransactionHash(address(manager), address(safe), prevOwner, oldOwner, newOwner, nonce);
+        Announcement memory announcement = announcements[txHash];
 
-        if (!announcements[txHash].executed) {
+        if (announcement.executed) {
             revert TransactionAlreadyExecuted(txHash);
         }
 
-        if (announcements[txHash].executionTime < block.timestamp) {
+        if (block.timestamp < uint256(announcement.executionTime)) {
             revert TransactionExecutionNotAllowedYet(txHash);
+        }
+
+        if (
+            announcement.validityDuration != 0 &&
+            block.timestamp > uint256(announcement.executionTime) + uint256(announcement.validityDuration)
+        ) {
+            revert TransactionExecutionValidityExpired(txHash);
         }
 
         announcements[txHash].executed = true;
@@ -102,7 +115,9 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         emit OwnerReplaced(address(safe), oldOwner, newOwner);
     }
 
-    /// @dev Returns the chain id used by this contract.
+    /**
+     * @dev Returns the chain id used by this contract.
+     */
     function getChainId() public view returns (uint256) {
         uint256 id;
         // solium-disable-next-line security/no-inline-assembly
@@ -112,6 +127,15 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         return id;
     }
 
+    /**
+     * @notice Returns the transaction hash for a recovery transaction.
+     * @param manager Address of the manager contract.
+     * @param account Address of the safe account.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     */
     function getTransactionHashData(
         address manager,
         address account,
@@ -131,6 +155,16 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator, transactionHash);
     }
 
+    /**
+     * @notice Creates a recovery announcement for a Safe account. Only the recoverer can create a recovery announcement.
+     * @param manager Address of the manager contract.
+     * @param account Address of the safe account.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     * @param executionTime A uint64 representing the block time in seconds after which the announced transaction can be executed.
+     */
     function createAnnouncement(
         address manager,
         address account,
@@ -138,27 +172,33 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         address oldOwner,
         address newOwner,
         uint256 nonce,
-        uint64 executionTime
+        uint64 executionTime,
+        uint64 validityDuration
     ) external onlyRecoverer {
         bytes32 txHash = getTransactionHash(manager, account, prevOwner, oldOwner, newOwner, nonce);
         Announcement memory announcement = announcements[txHash];
 
         if (executionTime <= block.timestamp) {
-            revert ExecutiontimeShouldBeInFuture();
+            revert ExecutionTimeShouldBeInFuture();
         }
 
-        if (announcement.executed) {
-            revert TransactionAlreadyExecuted(txHash);
-        }
-
-        if (!announcement.executed && announcement.executionTime != 0) {
+        if (announcement.executionTime != 0) {
             revert TransactionAlreadyScheduled(txHash);
         }
 
-        announcements[txHash] = Announcement(executionTime, type(uint16).max, false);
+        announcements[txHash] = Announcement(executionTime, validityDuration, false);
         emit NewRecoveryAnnouncement();
     }
 
+    /**
+     * @notice Cancels a recovery announcement for a Safe account. Only the recoverer can execute this function.
+     * @param manager Address of the manager contract.
+     * @param account Address of the safe account.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     */
     function cancelAnnouncement(
         address manager,
         address account,
@@ -167,6 +207,39 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         address newOwner,
         uint256 nonce
     ) external onlyRecoverer {
+        _cancelAnnouncement(manager, account, prevOwner, oldOwner, newOwner, nonce);
+    }
+
+    /**
+     * @notice Cancels a recovery announcement for a Safe account. This function facilitates cancelling the reccovery process by an account.
+     *         The msg.sender should be an account.
+     * @param manager Address of the manager contract.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     */
+    function cancelAnnouncementFromAccount(address manager, address prevOwner, address oldOwner, address newOwner, uint256 nonce) external {
+        _cancelAnnouncement(manager, msg.sender, prevOwner, oldOwner, newOwner, nonce);
+    }
+
+    /**
+     * @notice Cancels a recovery announcement for a Safe account. This is an private function that is called by a recoverer or an account.
+     * @param manager Address of the manager contract.
+     * @param account Address of the safe account.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     */
+    function _cancelAnnouncement(
+        address manager,
+        address account,
+        address prevOwner,
+        address oldOwner,
+        address newOwner,
+        uint256 nonce
+    ) private {
         bytes32 txHash = getTransactionHash(manager, account, prevOwner, oldOwner, newOwner, nonce);
 
         Announcement memory announcement = announcements[txHash];
@@ -180,9 +253,18 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
         delete announcements[txHash];
 
-        emit RecoveryAccouncementCancelled();
+        emit RecoveryAnnouncementCancelled();
     }
 
+    /**
+     * @notice Returns the transaction hash for a recovery transaction. The hash is generated using keccak256 function.
+     * @param manager Address of the manager contract.
+     * @param account Address of the safe account.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     */
     function getTransactionHash(
         address manager,
         address account,
