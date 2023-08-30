@@ -7,7 +7,7 @@ import { ISafeProtocolManager__factory } from "../typechain-types";
 import { SafeProtocolAction, SafeRootAccess } from "../src/utils/dataTypes";
 import { MaxUint256, ZeroHash } from "ethers";
 
-describe("RecoverWithDelayPlugin", async () => {
+describe("RecoverWithDelayPlugin", () => {
     let deployer: SignerWithAddress,
         recoverer: SignerWithAddress,
         user1: SignerWithAddress,

@@ -118,34 +118,6 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     }
 
     /**
-     * @notice Returns the transaction hash for a recovery transaction.
-     * @param manager Address of the manager contract.
-     * @param account Address of the safe account.
-     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
-     * @param oldOwner Address of the owner to be replaced.
-     * @param newOwner Address of the new owner.
-     * @param nonce A uint256 used to uniquely identify a recovery transaction.
-     */
-    function getTransactionHashData(
-        address manager,
-        address account,
-        address prevOwner,
-        address oldOwner,
-        address newOwner,
-        uint256 nonce
-    ) public view returns (bytes memory) {
-        uint256 chainId = block.chainid;
-
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, chainId, this));
-
-        bytes32 transactionHash = keccak256(
-            abi.encode(DELAYED_RECOVERY_TRANSACTION_TYPEHASH, recoverer, manager, account, prevOwner, oldOwner, newOwner, nonce)
-        );
-
-        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator, transactionHash);
-    }
-
-    /**
      * @notice Creates a recovery announcement for a Safe account. Only the recoverer can create a recovery announcement.
      * @param manager Address of the manager contract.
      * @param account Address of the safe account.
@@ -244,6 +216,34 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         delete announcements[txHash];
 
         emit RecoveryAnnouncementCancelled(txHash);
+    }
+
+    /**
+     * @notice Returns the transaction hash for a recovery transaction.
+     * @param manager Address of the manager contract.
+     * @param account Address of the safe account.
+     * @param prevOwner Address of the owner previous to the owner to be replaced in the linked list
+     * @param oldOwner Address of the owner to be replaced.
+     * @param newOwner Address of the new owner.
+     * @param nonce A uint256 used to uniquely identify a recovery transaction.
+     */
+    function getTransactionHashData(
+        address manager,
+        address account,
+        address prevOwner,
+        address oldOwner,
+        address newOwner,
+        uint256 nonce
+    ) public view returns (bytes memory) {
+        uint256 chainId = block.chainid;
+
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, chainId, this));
+
+        bytes32 transactionHash = keccak256(
+            abi.encode(DELAYED_RECOVERY_TRANSACTION_TYPEHASH, recoverer, manager, account, prevOwner, oldOwner, newOwner, nonce)
+        );
+
+        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator, transactionHash);
     }
 
     /**
