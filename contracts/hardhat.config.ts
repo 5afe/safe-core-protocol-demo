@@ -89,7 +89,7 @@ const config: HardhatUserConfig = {
     deployer: {
       default: 0
     },
-    owner: {
+    recoverer: {
       default: 1
     }
   }
