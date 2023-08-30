@@ -43,7 +43,6 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
     // Errors
     error CallerNotValidRecoverer();
-    error NonceAlreadyUsed(uint256 nonce);
     error TransactionAlreadyExecuted(bytes32 txHash);
     error TransactionAlreadyScheduled(bytes32 txHash);
     error ExecutionTimeShouldBeInFuture();
