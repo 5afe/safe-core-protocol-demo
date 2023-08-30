@@ -37,9 +37,9 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     mapping(bytes32 => Announcement) public announcements;
 
     // Events
-    event NewRecoveryAnnouncement(address account, bytes32 txHash);
+    event NewRecoveryAnnouncement(address indexed account, bytes32 txHash);
     event RecoveryAnnouncementCancelled(bytes32 txHash);
-    event OwnerReplaced(address account, address oldowner, address newOwner);
+    event OwnerReplaced(address indexed account, address oldowner, address newOwner);
 
     // Errors
     error CallerNotValidRecoverer();
