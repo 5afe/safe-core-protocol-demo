@@ -29,11 +29,10 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         bool executed; // Flag if the announced transaction was executed
     }
 
-    // Contract storage
-
     // Only recoverer can initiate recovery process
     address public immutable recoverer;
 
+    // Contract storage
     // Transaction Hash -> Announcement
     mapping(bytes32 => Announcement) public announcements;
 
@@ -119,18 +118,6 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
     }
 
     /**
-     * @dev Returns the chain id used by this contract.
-     */
-    function getChainId() public view returns (uint256) {
-        uint256 id;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            id := chainid()
-        }
-        return id;
-    }
-
-    /**
      * @notice Returns the transaction hash for a recovery transaction.
      * @param manager Address of the manager contract.
      * @param account Address of the safe account.
@@ -147,7 +134,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
         address newOwner,
         uint256 nonce
     ) public view returns (bytes memory) {
-        uint256 chainId = getChainId();
+        uint256 chainId = block.chainid;
 
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, chainId, this));
 
