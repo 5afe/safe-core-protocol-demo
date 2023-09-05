@@ -1,7 +1,7 @@
 import hre, { deployments, ethers } from "hardhat";
 import { expect } from "chai";
 import { getProtocolManagerAddress } from "../src/utils/protocol";
-import { getRecoveryWithDelayPlugin } from "../src/utils/contracts";
+import { getRecoveryWithDelayPlugin } from "./utils/contracts";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { ISafeProtocolManager__factory } from "../typechain-types";
 import { SafeProtocolAction, SafeRootAccess } from "../src/utils/dataTypes";
