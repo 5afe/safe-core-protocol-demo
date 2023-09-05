@@ -1,5 +1,5 @@
 name: safe-core-protocol-demo-contracts
-on: [ push, pull_request ]
+on: [push, pull_request]
 defaults:
   run:
     working-directory: ./contracts
@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 16.7.0
+          node-version: 18.x
       - uses: actions/cache@v2
         with:
           path: "**/node_modules"
@@ -23,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 16.7.0
+          node-version: 18.x
       - uses: actions/cache@v2
         with:
           path: "**/node_modules"

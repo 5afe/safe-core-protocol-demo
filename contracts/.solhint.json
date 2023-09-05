@@ -1,6 +1,6 @@
 {
   "extends": "solhint:recommended",
-  "plugins": ["prettier"],
+  "plugins": [],
   "rules": {
       "compiler-version": "off",
       "func-visibility": [
