@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.18;
 import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
-import {ISafeProtocolPlugin} from "@safe-global/safe-core-protocol/contracts/interfaces/Integrations.sol";
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
 import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
@@ -52,11 +51,7 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
 
     constructor(
         address _recoverer
-    )
-        BasePluginWithEventMetadata(
-            PluginMetadata({name: "Recovery Plugin", version: "1.0.0", requiresRootAccess: true, iconUrl: "", appUrl: ""})
-        )
-    {
+    ) BasePluginWithEventMetadata(PluginMetadata({name: "Recovery Plugin", version: "1.0.0", permissions: 2, iconUrl: "", appUrl: ""})) {
         recoverer = _recoverer;
     }
 

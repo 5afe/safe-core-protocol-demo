@@ -32,7 +32,7 @@ contract RelayPlugin is BasePluginWithEventMetadata {
             PluginMetadata({
                 name: "Relay Plugin",
                 version: "1.0.0",
-                requiresRootAccess: false,
+                permissions: 1,
                 iconUrl: "",
                 appUrl: "https://5afe.github.io/safe-core-protocol-demo/#/relay/${plugin}"
             })

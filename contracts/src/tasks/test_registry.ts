@@ -5,23 +5,21 @@ import { getPlugin, getRegistry, getRelayPlugin } from "../../test/utils/contrac
 import { IntegrationType } from "../utils/constants";
 import { loadPluginMetadata } from "../utils/metadata";
 
-task("register-plugin", "Registers the sample Plugin in the Safe{Core} test register")
-    .setAction(async (_, hre) => {
-        const registry = await getRegistry(hre)
-        const plugin = await getRelayPlugin(hre)
-        await registry.addIntegration(await plugin.getAddress(), IntegrationType.Plugin)
-        console.log("Registered Plugin registry")
-    });
+task("register-plugin", "Registers the sample Plugin in the Safe{Core} test register").setAction(async (_, hre) => {
+    const registry = await getRegistry(hre);
+    const plugin = await getRelayPlugin(hre);
+    await registry.addModule(await plugin.getAddress(), IntegrationType.Plugin);
+    console.log("Registered Plugin registry");
+});
 
-task("list-plugins", "List available Plugins in the Safe{Core} test register")
-    .setAction(async (_, hre) => {
-        const registry = await getRegistry(hre)
-        const events = await registry.queryFilter(registry.filters.IntegrationAdded)
-        for (const event of events) {
-            const plugin = await getPlugin(hre, event.args.integration)
-            const metadata = await loadPluginMetadata(hre, plugin)
-            console.log(event.args.integration, metadata)
-        }
-    });
+task("list-plugins", "List available Plugins in the Safe{Core} test register").setAction(async (_, hre) => {
+    const registry = await getRegistry(hre);
+    const events = await registry.queryFilter(registry.filters.ModuleAdded);
+    for (const event of events) {
+        const plugin = await getPlugin(hre, event.args.module);
+        const metadata = await loadPluginMetadata(hre, plugin);
+        console.log(event.args.module, metadata);
+    }
+});
 
-export { }
+export { };

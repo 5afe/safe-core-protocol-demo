@@ -32,7 +32,7 @@ describe("WhitelistPlugin", async () => {
         const { plugin } = await setup();
         expect(await plugin.name()).to.be.eq("Whitelist Plugin");
         expect(await plugin.version()).to.be.eq("1.0.0");
-        expect(await plugin.requiresRootAccess()).to.be.false;
+        expect(await plugin.permissions()).to.be.eq(1);
     });
 
     it("can retrieve meta data for module", async () => {
@@ -40,7 +40,7 @@ describe("WhitelistPlugin", async () => {
         expect(await loadPluginMetadata(hre, plugin)).to.be.deep.eq({
             name: "Whitelist Plugin",
             version: "1.0.0",
-            requiresRootAccess: false,
+            permissions: 1,
             iconUrl: "",
             appUrl: "",
         });

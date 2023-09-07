@@ -6,7 +6,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 interface PluginMetadata {
     name: string;
     version: string;
-    requiresRootAccess: boolean;
+    permissions: number;
     iconUrl: string;
     appUrl: string;
 }
@@ -16,8 +16,8 @@ interface PluginMetadata {
 const ProviderType_Contract = 2n;
 const ProviderType_Event = BigInt(3);
 
-const MetadataEvent: string[] = ["event Metadata(bytes32 indexed metadataHash, bytes data)"]
-const PluginMetadataType: string[] = ["string name", "string version", "bool requiresRootAccess", "string iconUrl", "string appUrl"];
+const MetadataEvent: string[] = ["event Metadata(bytes32 indexed metadataHash, bytes data)"];
+const PluginMetadataType: string[] = ["string name", "string version", "uint8 permissions", "string iconUrl", "string appUrl"];
 
 const loadPluginMetadataFromContract = async (hre: HardhatRuntimeEnvironment, provider: string, metadataHash: string): Promise<string> => {
     const providerInstance = await getInstance<IMetadataProvider>(hre, "IMetadataProvider", provider);
@@ -25,16 +25,16 @@ const loadPluginMetadataFromContract = async (hre: HardhatRuntimeEnvironment, pr
 };
 
 const loadPluginMetadataFromEvent = async (hre: HardhatRuntimeEnvironment, provider: string, metadataHash: string): Promise<string> => {
-    const eventInterface = new Interface(MetadataEvent)
+    const eventInterface = new Interface(MetadataEvent);
     const events = await hre.ethers.provider.getLogs({
         address: provider,
         topics: eventInterface.encodeFilterTopics("Metadata", [metadataHash]),
         fromBlock: "earliest",
-        toBlock: "latest"
-    })
+        toBlock: "latest",
+    });
     if (events.length == 0) throw Error("Metadata not found");
     const metadataEvent = events[events.length - 1];
-    const decodedEvent = eventInterface.decodeEventLog("Metadata", metadataEvent.data, metadataEvent.topics)
+    const decodedEvent = eventInterface.decodeEventLog("Metadata", metadataEvent.data, metadataEvent.topics);
     return decodedEvent.data;
 };
 
@@ -66,7 +66,7 @@ export const decodePluginMetadata = (data: string): PluginMetadata => {
     return {
         name: decoded[0],
         version: decoded[1],
-        requiresRootAccess: decoded[2],
+        permissions: decoded[2],
         iconUrl: decoded[3],
         appUrl: decoded[4],
     };

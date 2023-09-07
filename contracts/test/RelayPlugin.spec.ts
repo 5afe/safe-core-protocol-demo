@@ -41,7 +41,7 @@ describe("RelayPlugin", async () => {
         const { plugin } = await setup();
         expect(await plugin.name()).to.be.eq("Relay Plugin");
         expect(await plugin.version()).to.be.eq("1.0.0");
-        expect(await plugin.requiresRootAccess()).to.be.false;
+        expect(await plugin.requiresPermissions()).to.be.eq(1);
     });
 
     it("can retrieve metadata for module", async () => {
@@ -49,7 +49,7 @@ describe("RelayPlugin", async () => {
         expect(await loadPluginMetadata(hre, plugin)).to.be.deep.eq({
             name: "Relay Plugin",
             version: "1.0.0",
-            requiresRootAccess: false,
+            permissions: 1,
             iconUrl: "",
             appUrl: "https://5afe.github.io/safe-core-protocol-demo/#/relay/${plugin}",
         });
