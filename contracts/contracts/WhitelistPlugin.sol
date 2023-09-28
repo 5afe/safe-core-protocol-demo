@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.18;
-import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
+
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {SafeTransaction, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
@@ -41,19 +41,18 @@ contract WhitelistPlugin is BasePluginWithEventMetadata {
      */
     function executeFromPlugin(
         ISafeProtocolManager manager,
-        ISafe safe,
+        address safe,
         SafeTransaction calldata safetx
     ) external returns (bytes[] memory data) {
-        address safeAddress = address(safe);
         // Only Safe owners are allowed to execute transactions to whitelisted accounts.
-        if (!(OwnerManager(safeAddress).isOwner(msg.sender))) {
-            revert CallerIsNotOwner(safeAddress, msg.sender);
+        if (!(OwnerManager(safe).isOwner(msg.sender))) {
+            revert CallerIsNotOwner(safe, msg.sender);
         }
 
         SafeProtocolAction[] memory actions = safetx.actions;
         uint256 length = actions.length;
         for (uint256 i = 0; i < length; i++) {
-            if (!whitelistedAddresses[safeAddress][actions[i].to]) revert AddressNotWhiteListed(actions[i].to);
+            if (!whitelistedAddresses[safe][actions[i].to]) revert AddressNotWhiteListed(actions[i].to);
         }
         // Test: Any tx that updates whitelist of this contract should be blocked
         (data) = manager.executeTransaction(safe, safetx);

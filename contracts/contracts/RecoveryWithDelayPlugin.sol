@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.18;
-import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
 import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
@@ -76,13 +75,13 @@ contract RecoveryWithDelayPlugin is BasePluginWithEventMetadata {
      */
     function executeFromPlugin(
         ISafeProtocolManager manager,
-        ISafe safe,
+        address safe,
         address prevOwner,
         address oldOwner,
         address newOwner,
         uint256 nonce
     ) external returns (bytes memory data) {
-        bytes32 txHash = getTransactionHash(address(manager), address(safe), prevOwner, oldOwner, newOwner, nonce);
+        bytes32 txHash = getTransactionHash(address(manager), safe, prevOwner, oldOwner, newOwner, nonce);
         Announcement memory announcement = announcements[txHash];
 
         if (announcement.executed) {

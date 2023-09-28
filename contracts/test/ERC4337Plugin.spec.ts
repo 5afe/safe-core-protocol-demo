@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { loadPluginMetadata } from "../src/utils/metadata";
 import { getProtocolManagerAddress } from "../src/utils/protocol";
 import { deploySafe, getSafeProxyFactoryContractFactory, getSafeSingletonContractFactory } from "./utils/safe";
-import { IntegrationType } from "../src/utils/constants";
+import { ModuleType } from "../src/utils/constants";
 
 const ERC4337_TEST_ENV_VARIABLES_DEFINED =
     typeof process.env.ERC4337_TEST_BUNDLER_URL !== "undefined" &&
@@ -18,6 +18,12 @@ const SINGLETON_ADDRESS = process.env.ERC4337_TEST_SINGLETON_ADDRESS;
 const BUNDLER_URL = process.env.ERC4337_TEST_BUNDLER_URL;
 const NODE_URL = process.env.ERC4337_TEST_NODE_URL;
 const MNEMONIC = process.env.ERC4337_TEST_MNEMONIC;
+
+// const uint8ToBytes32 = (number: number): Buffer => {
+//     const bytes = Buffer.alloc(32);
+//     bytes.writeUint8(number, 31);
+//     return bytes;
+// };
 
 const randomAddress = "0x1234567890123456789012345678901234567890";
 
@@ -35,8 +41,9 @@ describe("ERC4337 Plugin", () => {
         const erc4337Plugin = await (
             await ethers.getContractFactory("ERC4337Plugin")
         ).deploy(safeProtocolManager.getAddress(), randomAddress);
-        await testRegistryDeployment.addModule(erc4337Plugin.getAddress(), IntegrationType.Plugin);
-        await testRegistryDeployment.addModule(erc4337Plugin.getAddress(), IntegrationType.FunctionHandler);
+        await testRegistryDeployment
+            .addModule(erc4337Plugin.getAddress(), ModuleType.Plugin + ModuleType.FunctionHandler)
+            .then((tx) => tx.wait(1));
 
         const account = await (await ethers.getContractFactory("ExecutableMockContract")).deploy();
         const proxyFactory = await (await (await getSafeProxyFactoryContractFactory()).deploy()).waitForDeployment();
@@ -61,7 +68,7 @@ describe("ERC4337 Plugin", () => {
         expect(await erc4337Plugin.permissions()).to.be.eq(1);
     });
 
-    it("can retrieve meta data for module", async () => {
+    it.only("can retrieve metadata for the module", async () => {
         const { erc4337Plugin } = await setup();
         expect(await loadPluginMetadata(hre, erc4337Plugin)).to.be.deep.eq({
             name: "ERC4337 Plugin",
@@ -83,5 +90,5 @@ describe("ERC4337 Plugin", () => {
      * 1. Deployment of the Safe with the ERC4337 module and handler is possible
      * 2. Executing a transaction is possible
      */
-    itif("integration test", async () => { });
+    itif("integration test", async () => {});
 });

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
-import {ISafe} from "@safe-global/safe-core-protocol/contracts/interfaces/Accounts.sol";
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {SafeTransaction, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 import {_getFeeCollectorRelayContext, _getFeeTokenRelayContext, _getFeeRelayContext} from "@gelatonetwork/relay-context/contracts/GelatoRelayContext.sol";
@@ -47,12 +46,12 @@ contract RelayPlugin is BasePluginWithEventMetadata {
         emit MaxFeeUpdated(msg.sender, token, maxFee);
     }
 
-    function payFee(ISafeProtocolManager manager, ISafe safe, uint256 nonce) internal {
+    function payFee(ISafeProtocolManager manager, address safe, uint256 nonce) internal {
         address feeCollector = _getFeeCollectorRelayContext();
         address feeToken = _getFeeTokenRelayContext();
         uint256 fee = _getFeeRelayContext();
         SafeProtocolAction[] memory actions = new SafeProtocolAction[](1);
-        uint256 maxFee = maxFeePerToken[address(safe)][feeToken];
+        uint256 maxFee = maxFeePerToken[safe][feeToken];
         if (fee > maxFee) revert FeeTooHigh(feeToken, fee);
         if (feeToken == NATIVE_TOKEN || feeToken == address(0)) {
             // If the native token is used for fee payment, then we directly send the fees to the fee collector
@@ -81,7 +80,7 @@ contract RelayPlugin is BasePluginWithEventMetadata {
         if (!success) revert RelayExecutionFailure(data);
     }
 
-    function executeFromPlugin(ISafeProtocolManager manager, ISafe safe, bytes calldata data) external {
+    function executeFromPlugin(ISafeProtocolManager manager, address safe, bytes calldata data) external {
         if (trustedOrigin != address(0) && msg.sender != trustedOrigin) revert UntrustedOrigin(msg.sender);
 
         relayCall(address(safe), data);

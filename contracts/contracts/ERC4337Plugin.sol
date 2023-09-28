@@ -2,8 +2,12 @@
 pragma solidity ^0.8.18;
 import {ISafeProtocolPlugin, ISafeProtocolFunctionHandler} from "@safe-global/safe-core-protocol/contracts/interfaces/Modules.sol";
 
+import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
-import {BasePluginWithEventMetadata, PluginMetadata, MetadataProviderType} from "./Base.sol";
+import {MODULE_TYPE_PLUGIN} from "@safe-global/safe-core-protocol/contracts/common/Constants.sol";
+import {BasePlugin, BasePluginWithEventMetadata, PluginMetadata, MetadataProviderType} from "./Base.sol";
+
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface ISafe {
     function isOwner(address owner) external view returns (bool);
@@ -26,31 +30,9 @@ interface ISafe {
         uint8 operation
     ) external returns (bool success, bytes memory returnData);
 
-    function enablePlugin(address plugin, bool allowRootAccess) external;
+    function enablePlugin(address plugin, uint8 permissions) external;
 
     function setFunctionHandler(bytes4 selector, address functionHandler) external;
-}
-
-interface ISafeProtocolManager {
-    /**
-     * @notice This function allows enabled plugins to execute non-delegate call transactions thorugh a Safe.
-     *         It should validate the status of the plugin through the registry and allows only listed and non-flagged integrations to execute transactions.
-     * @param safe Address of a Safe account
-     * @param transaction SafeTransaction instance containing payload information about the transaction
-     * @return data Array of bytes types returned upon the successful execution of all the actions. The size of the array will be the same as the size of the actions
-     *         in case of succcessful execution. Empty if the call failed.
-     */
-    function executeTransaction(ISafe safe, SafeTransaction calldata transaction) external returns (bytes[] memory data);
-
-    /**
-     * @notice This function allows enabled plugins to execute delegate call transactions thorugh a Safe.
-     *         It should validate the status of the plugin through the registry and allows only listed and non-flagged integrations to execute transactions.
-     * @param safe Address of a Safe account
-     * @param rootAccess SafeTransaction instance containing payload information about the transaction
-     * @return data Arbitrary length bytes data returned upon the successful execution. The size of the array will be the same as the size of the actions
-     *         in case of succcessful execution. Empty if the call failed.
-     */
-    function executeRootAccess(ISafe safe, SafeRootAccess calldata rootAccess) external returns (bytes memory data);
 }
 
 struct UserOperation {
@@ -103,6 +85,7 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         require(msg.sender == address(PLUGIN_ADDRESS));
         address payable safeAddress = payable(msg.sender);
         ISafe safe = ISafe(safeAddress);
+
         require(safe.execTransactionFromModule(to, value, data, 0), "tx failed");
     }
 
@@ -120,10 +103,9 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         require(address(this) != PLUGIN_ADDRESS, "Only delegatecall");
 
         ISafe safe = ISafe(address(this));
-
         safe.setFallbackHandler(address(SAFE_PROTOCOL_MANAGER));
         safe.enableModule(address(SAFE_PROTOCOL_MANAGER));
-        safe.enablePlugin(PLUGIN_ADDRESS, false);
+        safe.enablePlugin(PLUGIN_ADDRESS, MODULE_TYPE_PLUGIN);
         safe.setFunctionHandler(this.validateUserOp.selector, PLUGIN_ADDRESS);
         safe.setFunctionHandler(this.execTransaction.selector, PLUGIN_ADDRESS);
     }
@@ -138,7 +120,14 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         override(BasePluginWithEventMetadata, ISafeProtocolFunctionHandler)
         returns (uint256 providerType, bytes memory location)
     {
-        providerType = uint256(MetadataProviderType.Contract);
+        providerType = uint256(MetadataProviderType.Event);
         location = abi.encode(address(this));
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure override(BasePlugin, IERC165) returns (bool) {
+        return
+            interfaceId == type(ISafeProtocolPlugin).interfaceId ||
+            interfaceId == type(IERC165).interfaceId ||
+            interfaceId == type(ISafeProtocolFunctionHandler).interfaceId;
     }
 }
