@@ -33,6 +33,8 @@ interface ISafe {
     function enablePlugin(address plugin, uint8 permissions) external;
 
     function setFunctionHandler(bytes4 selector, address functionHandler) external;
+
+    function checkSignatures(bytes32 dataHash, bytes memory, bytes memory signatures) external;
 }
 
 struct UserOperation {
@@ -69,33 +71,52 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         ENTRY_POINT = entryPoint;
     }
 
-    function validateUserOp(UserOperation calldata userOp, bytes32, uint256 missingAccountFunds) external returns (uint256 validationData) {
-        require(msg.sender == address(PLUGIN_ADDRESS));
-        address payable safeAddress = payable(userOp.sender);
-        ISafe senderSafe = ISafe(safeAddress);
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingAccountFunds
+    ) external returns (uint256 validationData) {
+        require(msg.sender == address(PLUGIN_ADDRESS), "Only plugin");
+
+        ISafe(payable(userOp.sender)).checkSignatures(userOpHash, "", userOp.signature);
 
         if (missingAccountFunds != 0) {
-            senderSafe.execTransactionFromModule(ENTRY_POINT, missingAccountFunds, "", 0);
+            SafeProtocolAction[] memory actions = new SafeProtocolAction[](1);
+            actions[0] = SafeProtocolAction({to: ENTRY_POINT, value: missingAccountFunds, data: ""});
+            SAFE_PROTOCOL_MANAGER.executeTransaction(
+                userOp.sender,
+                SafeTransaction({actions: actions, nonce: 0, metadataHash: userOpHash})
+            );
         }
 
         return 0;
     }
 
-    function execTransaction(address payable to, uint256 value, bytes calldata data) external {
+    function execTransaction(address safe, address payable to, uint256 value, bytes calldata data) external {
         require(msg.sender == address(PLUGIN_ADDRESS));
-        address payable safeAddress = payable(msg.sender);
-        ISafe safe = ISafe(safeAddress);
 
-        require(safe.execTransactionFromModule(to, value, data, 0), "tx failed");
+        SafeProtocolAction[] memory actions = new SafeProtocolAction[](1);
+        actions[0] = SafeProtocolAction({to: to, value: value, data: data});
+
+        SAFE_PROTOCOL_MANAGER.executeTransaction(safe, SafeTransaction({actions: actions, nonce: 0, metadataHash: bytes32(0)}));
     }
 
-    function handle(address safe, address sender, uint256 value, bytes calldata data) external returns (bytes memory result) {
+    function handle(address, address sender, uint256, bytes calldata data) external returns (bytes memory result) {
         bytes4 selector = bytes4(data[0:4]);
-
+        require(sender == ENTRY_POINT, "Only entry point");
+        bool success;
         if (selector == this.validateUserOp.selector) {
-            (, result) = PLUGIN_ADDRESS.call(data);
+            (success, result) = PLUGIN_ADDRESS.call(data);
         } else if (selector == this.execTransaction.selector) {
-            (, result) = PLUGIN_ADDRESS.call(data);
+            (success, result) = PLUGIN_ADDRESS.call(data);
+        }
+
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // use assembly to avoid converting result bytes to string
+            if eq(success, 0) {
+                revert(add(result, 32), mload(result))
+            }
         }
     }
 
@@ -110,10 +131,6 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         safe.setFunctionHandler(this.execTransaction.selector, PLUGIN_ADDRESS);
     }
 
-    function requireFromEntryPoint(address sender) internal view {
-        require(sender == ENTRY_POINT, "Only entry point");
-    }
-
     function metadataProvider()
         public
         view
@@ -122,6 +139,34 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
     {
         providerType = uint256(MetadataProviderType.Event);
         location = abi.encode(address(this));
+    }
+
+    function packUserOperation(UserOperation calldata userOp) internal pure returns (bytes memory ret) {
+        //lighter signature scheme. must match UserOp.ts#packUserOp
+        bytes calldata sig = userOp.signature;
+        // copy directly the userOp from calldata up to (but not including) the signature.
+        // this encoding depends on the ABI encoding of calldata, but is much lighter to copy
+        // than referencing each field separately.
+        assembly {
+            let ofs := userOp
+            let len := sub(sub(sig.offset, ofs), 32)
+            ret := mload(0x40)
+            mstore(0x40, add(ret, add(len, 32)))
+            mstore(ret, len)
+            calldatacopy(add(ret, 32), ofs, len)
+        }
+    }
+
+    function hashUserOpStruct(UserOperation calldata userOp) internal pure returns (bytes32) {
+        return keccak256(packUserOperation(userOp));
+    }
+
+    /**
+     * generate a request Id - unique identifier for this request.
+     * the request ID is a hash over the content of the userOp (except the signature), the entrypoint and the chainid.
+     */
+    function getUserOpHash(UserOperation calldata userOp) public view returns (bytes32) {
+        return keccak256(abi.encode(hashUserOpStruct(userOp), address(this), block.chainid));
     }
 
     function supportsInterface(bytes4 interfaceId) external pure override(BasePlugin, IERC165) returns (bool) {
