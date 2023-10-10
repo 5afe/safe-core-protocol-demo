@@ -61,6 +61,7 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
     address public immutable PLUGIN_ADDRESS;
     ISafeProtocolManager public immutable SAFE_PROTOCOL_MANAGER;
     address payable public immutable ENTRY_POINT;
+    uint256 public constant SIGNATURE_VALID = 0;
 
     constructor(
         ISafeProtocolManager safeCoreProtocolManager,
@@ -89,7 +90,7 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
             );
         }
 
-        return 0;
+        return SIGNATURE_VALID;
     }
 
     function execTransaction(address safe, address payable to, uint256 value, bytes calldata data) external {
@@ -103,7 +104,7 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
 
     function handle(address, address sender, uint256, bytes calldata data) external returns (bytes memory result) {
         bytes4 selector = bytes4(data[0:4]);
-        require(sender == ENTRY_POINT, "Only entry point");
+        require(sender == ENTRY_POINT, "Only entrypoint");
         bool success;
         if (selector == this.validateUserOp.selector) {
             (success, result) = PLUGIN_ADDRESS.call(data);
@@ -139,34 +140,6 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
     {
         providerType = uint256(MetadataProviderType.Event);
         location = abi.encode(address(this));
-    }
-
-    function packUserOperation(UserOperation calldata userOp) internal pure returns (bytes memory ret) {
-        //lighter signature scheme. must match UserOp.ts#packUserOp
-        bytes calldata sig = userOp.signature;
-        // copy directly the userOp from calldata up to (but not including) the signature.
-        // this encoding depends on the ABI encoding of calldata, but is much lighter to copy
-        // than referencing each field separately.
-        assembly {
-            let ofs := userOp
-            let len := sub(sub(sig.offset, ofs), 32)
-            ret := mload(0x40)
-            mstore(0x40, add(ret, add(len, 32)))
-            mstore(ret, len)
-            calldatacopy(add(ret, 32), ofs, len)
-        }
-    }
-
-    function hashUserOpStruct(UserOperation calldata userOp) internal pure returns (bytes32) {
-        return keccak256(packUserOperation(userOp));
-    }
-
-    /**
-     * generate a request Id - unique identifier for this request.
-     * the request ID is a hash over the content of the userOp (except the signature), the entrypoint and the chainid.
-     */
-    function getUserOpHash(UserOperation calldata userOp) public view returns (bytes32) {
-        return keccak256(abi.encode(hashUserOpStruct(userOp), address(this), block.chainid));
     }
 
     function supportsInterface(bytes4 interfaceId) external pure override(BasePlugin, IERC165) returns (bool) {

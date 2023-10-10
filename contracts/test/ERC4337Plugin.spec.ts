@@ -142,7 +142,7 @@ describe("ERC4337 Plugin", () => {
         });
     });
 
-    it.only("can validate a signed user operation and send the prefund", async () => {
+    it("can validate a signed user operation and send the prefund", async () => {
         const { erc4337Plugin, signers, safe, safeWithPluginInterface, entryPoint } = await hardhatNetworkSetup();
 
         const userOperation: UserOperation = {
@@ -167,12 +167,11 @@ describe("ERC4337 Plugin", () => {
         const signature = await signers[0].signMessage(ethers.getBytes(userOpHash));
         userOperation.signature = `0x${(BigInt(signature) + 4n).toString(16)}`;
 
-        const zeroBytes32 = `0x${"0".repeat(64)}`;
         const entryPointBalanceBefore = await hre.ethers.provider.getBalance(entryPoint.address);
         // prefund safe
         await signers[0].sendTransaction({ to: safe, value: 1000000000000000000n });
 
-        const tx = await safeWithPluginInterface.connect(entryPoint).validateUserOp(userOperation, zeroBytes32, 1000000000000000000n);
+        const tx = await safeWithPluginInterface.connect(entryPoint).validateUserOp(userOperation, userOpHash, 1000000000000000000n);
         const receipt = await tx.wait(1);
 
         if (!receipt?.gasPrice || !receipt?.gasUsed) throw new Error("Gas price or gas used not found in receipt");
@@ -183,13 +182,93 @@ describe("ERC4337 Plugin", () => {
         expect(await hre.ethers.provider.getBalance(safe)).to.be.eq(0);
     });
 
-    it("rejects a signed user operation if the signature is invalid", async () => {});
+    it("rejects a signed user operation if the signature is invalid", async () => {
+        const { erc4337Plugin, signers, safe, safeWithPluginInterface, entryPoint } = await hardhatNetworkSetup();
 
-    it("can execute a transaction coming from the entrypoint", async () => {});
+        const userOperation: UserOperation = {
+            initCode: "0x",
+            sender: await safe.getAddress(),
+            nonce: 0,
+            callData: "0x",
+            callGasLimit: 0,
+            verificationGasLimit: 0,
+            preVerificationGas: 0,
+            maxFeePerGas: 0,
+            maxPriorityFeePerGas: 0,
+            paymasterAndData: "0x",
+            signature: "0x",
+        };
+        const userOpHash = await getUserOpHash(
+            userOperation,
+            await erc4337Plugin.getAddress(),
+            await hre.ethers.provider.getNetwork().then((n) => n.chainId),
+        );
+        const zeroBytes32 = `0x${"0".repeat(64)}`;
 
-    it("rejects validation requests coming from an address that is not the entrypoint", async () => {});
+        const signature = await signers[0].signMessage(ethers.getBytes(zeroBytes32));
+        userOperation.signature = `0x${(BigInt(signature) + 4n).toString(16)}`;
+        // prefund safe
+        await signers[0].sendTransaction({ to: safe, value: 1000000000000000000n });
 
-    it("rejects execution requests coming from an address that is not the entrypoint", async () => {});
+        await expect(
+            safeWithPluginInterface.connect(entryPoint).validateUserOp(userOperation, userOpHash, 1000000000000000000n),
+        ).to.be.revertedWith("GS026");
+    });
+
+    it("can execute a transaction coming from the entrypoint", async () => {
+        const { signers, safe, safeWithPluginInterface, entryPoint } = await hardhatNetworkSetup();
+        const randomAddress = hre.ethers.hexlify(hre.ethers.randomBytes(20));
+        const oneEther = 10n ** 18n;
+        await signers[0].sendTransaction({ to: safe, value: oneEther });
+
+        await safeWithPluginInterface.connect(entryPoint).execTransaction(safe, randomAddress, oneEther, "0x");
+
+        expect(await hre.ethers.provider.getBalance(randomAddress)).to.be.eq(oneEther);
+    });
+
+    it("rejects validation requests coming from an address that is not the entrypoint", async () => {
+        const { erc4337Plugin, signers, safe, safeWithPluginInterface } = await hardhatNetworkSetup();
+
+        const userOperation: UserOperation = {
+            initCode: "0x",
+            sender: await safe.getAddress(),
+            nonce: 0,
+            callData: "0x",
+            callGasLimit: 0,
+            verificationGasLimit: 0,
+            preVerificationGas: 0,
+            maxFeePerGas: 0,
+            maxPriorityFeePerGas: 0,
+            paymasterAndData: "0x",
+            signature: "0x",
+        };
+        const userOpHash = await getUserOpHash(
+            userOperation,
+            await erc4337Plugin.getAddress(),
+            await hre.ethers.provider.getNetwork().then((n) => n.chainId),
+        );
+
+        const signature = await signers[0].signMessage(ethers.getBytes(userOpHash));
+        userOperation.signature = `0x${(BigInt(signature) + 4n).toString(16)}`;
+
+        // prefund safe
+        await signers[0].sendTransaction({ to: safe, value: 1000000000000000000n });
+
+        await expect(
+            safeWithPluginInterface.connect(signers[0]).validateUserOp(userOperation, userOpHash, 1000000000000000000n),
+        ).to.be.revertedWith("Only entrypoint");
+    });
+
+    it("rejects execution requests coming from an address that is not the entrypoint", async () => {
+        const { signers, safe, safeWithPluginInterface } = await hardhatNetworkSetup();
+        const randomAddress = hre.ethers.hexlify(hre.ethers.randomBytes(20));
+        const oneEther = 10n ** 18n;
+        await signers[0].sendTransaction({ to: safe, value: oneEther });
+
+        await expect(safeWithPluginInterface.connect(signers[0]).execTransaction(safe, randomAddress, oneEther, "0x")).to.be.revertedWith(
+            "Only entrypoint",
+        );
+    });
 
     /**
      * This test verifies the ERC4337 based on gas estimation for a user operation
