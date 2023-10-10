@@ -1,19 +1,22 @@
 import hre, { deployments, ethers } from "hardhat";
 import { expect } from "chai";
-import { AbiCoder, keccak256 } from "ethers";
+import { AbiCoder, keccak256, JsonRpcProvider, ZeroAddress } from "ethers";
 import { loadPluginMetadata } from "../src/utils/metadata";
 import { getProtocolManagerAddress } from "../src/utils/protocol";
 import { deploySafe, getSafeProxyFactoryContractFactory, getSafeSingletonContractFactory } from "./utils/safe";
 import { ModuleType } from "../src/utils/constants";
 import { UserOperation } from "./utils/types";
 import { BigNumberish } from "ethers";
+import { ERC4337Plugin } from "../typechain-types";
 
 const ERC4337_TEST_ENV_VARIABLES_DEFINED =
     typeof process.env.ERC4337_TEST_BUNDLER_URL !== "undefined" &&
     typeof process.env.ERC4337_TEST_NODE_URL !== "undefined" &&
     typeof process.env.ERC4337_TEST_SAFE_FACTORY_ADDRESS !== "undefined" &&
     typeof process.env.ERC4337_TEST_SINGLETON_ADDRESS !== "undefined" &&
-    typeof process.env.ERC4337_TEST_MNEMONIC !== "undefined";
+    typeof process.env.ERC4337_TEST_MNEMONIC !== "undefined" &&
+    typeof process.env.ERC4337_TEST_SAFE_CORE_PROTOCOL_MANAGER_ADDRESS !== "undefined" &&
+    typeof process.env.ERC4337_TEST_SAFE_CORE_PROTOCOL_REGISTRY !== "undefined";
 
 const itif = ERC4337_TEST_ENV_VARIABLES_DEFINED ? it : it.skip;
 const SAFE_FACTORY_ADDRESS = process.env.ERC4337_TEST_SAFE_FACTORY_ADDRESS;
@@ -21,70 +24,47 @@ const SINGLETON_ADDRESS = process.env.ERC4337_TEST_SINGLETON_ADDRESS;
 const BUNDLER_URL = process.env.ERC4337_TEST_BUNDLER_URL;
 const NODE_URL = process.env.ERC4337_TEST_NODE_URL;
 const MNEMONIC = process.env.ERC4337_TEST_MNEMONIC;
+const SAFE_CORE_PROTOCOL_MANAGER_ADDRESS = process.env.ERC4337_TEST_SAFE_CORE_PROTOCOL_MANAGER_ADDRESS;
+const SAFE_CORE_PROTOCOL_REGISTRY = process.env.ERC4337_TEST_SAFE_CORE_PROTOCOL_REGISTRY;
+const FOUR337_PLUGIN_ADDRESS = process.env.ERC4337_TEST_4337_PLUGIN_ADDRESS;
 
-// const uint8ToBytes32 = (number: number): Buffer => {
-//     const bytes = Buffer.alloc(32);
-//     bytes.writeUint8(number, 31);
-//     return bytes;
-// };
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function encode(typevalues: Array<{ type: string; val: any }>, forSignature: boolean): string {
-    const types = typevalues.map((typevalue) => (typevalue.type === "bytes" && forSignature ? "bytes32" : typevalue.type));
-    const values = typevalues.map((typevalue) => (typevalue.type === "bytes" && forSignature ? keccak256(typevalue.val) : typevalue.val));
-    return AbiCoder.defaultAbiCoder().encode(types, values);
-}
+const packUserOp = (op: UserOperation): string =>
+    AbiCoder.defaultAbiCoder().encode(
+        [
+            "address", // sender
+            "uint256", // nonce
+            "bytes32", // initCode
+            "bytes32", // callData
+            "uint256", // callGasLimit
+            "uint256", // verificationGasLimit
+            "uint256", // preVerificationGas
+            "uint256", // maxFeePerGas
+            "uint256", // maxPriorityFeePerGas
+            "bytes32", // paymasterAndData
+        ],
+        [
+            op.sender,
+            op.nonce,
+            keccak256(op.initCode),
+            keccak256(op.callData),
+            op.callGasLimit,
+            op.verificationGasLimit,
+            op.preVerificationGas,
+            op.maxFeePerGas,
+            op.maxPriorityFeePerGas,
+            keccak256(op.paymasterAndData),
+        ],
+    );
 
-export function packUserOp(op: UserOperation, forSignature = true): string {
-    if (forSignature) {
-        // lighter signature scheme (must match UserOperation#pack): do encode a zero-length signature, but strip afterwards the appended zero-length value
-        const userOpType = {
-            components: [
-                { type: "address", name: "sender" },
-                { type: "uint256", name: "nonce" },
-                { type: "bytes", name: "initCode" },
-                { type: "bytes", name: "callData" },
-                { type: "uint256", name: "callGasLimit" },
-                { type: "uint256", name: "verificationGasLimit" },
-                { type: "uint256", name: "preVerificationGas" },
-                { type: "uint256", name: "maxFeePerGas" },
-                { type: "uint256", name: "maxPriorityFeePerGas" },
-                { type: "bytes", name: "paymasterAndData" },
-                { type: "bytes", name: "signature" },
-            ],
-            name: "userOp",
-            type: "tuple",
-        };
-        let encoded = AbiCoder.defaultAbiCoder().encode([userOpType as any], [{ ...op, signature: "0x" }]);
-        // remove leading word (total length) and trailing word (zero-length signature)
-        encoded = "0x" + encoded.slice(66, encoded.length - 64);
-        return encoded;
-    }
-    const typevalues = [
-        { type: "address", val: op.sender },
-        { type: "uint256", val: op.nonce },
-        { type: "bytes", val: op.initCode },
-        { type: "bytes", val: op.callData },
-        { type: "uint256", val: op.callGasLimit },
-        { type: "uint256", val: op.verificationGasLimit },
-        { type: "uint256", val: op.preVerificationGas },
-        { type: "uint256", val: op.maxFeePerGas },
-        { type: "uint256", val: op.maxPriorityFeePerGas },
-        { type: "bytes", val: op.paymasterAndData },
-    ];
-    if (!forSignature) {
-        // for the purpose of calculating gas cost, also hash signature
-        typevalues.push({ type: "bytes", val: op.signature });
-    }
-    return encode(typevalues, forSignature);
-}
-
-export function getUserOpHash(op: UserOperation, validator: string, chainId: BigNumberish): string {
-    const userOpStructHash = keccak256(packUserOp(op, true));
-    const enc = AbiCoder.defaultAbiCoder().encode(["bytes32", "address", "uint256"], [userOpStructHash, validator, chainId]);
+const getUserOpHash = (op: UserOperation, entryPoint: string, chainId: BigNumberish): string => {
+    const userOpHash = keccak256(packUserOp(op));
+    const enc = AbiCoder.defaultAbiCoder().encode(["bytes32", "address", "uint256"], [userOpHash, entryPoint, chainId]);
     return keccak256(enc);
-}
+};
 
-describe("ERC4337 Plugin", () => {
+describe.only("ERC4337 Plugin", () => {
     const hardhatNetworkSetup = deployments.createFixture(async ({ deployments }) => {
         await deployments.fixture();
         const signers = await hre.ethers.getSigners();
@@ -123,6 +103,73 @@ describe("ERC4337 Plugin", () => {
             safeWithPluginInterface,
         };
     });
+
+    const integrationTestSetup = async () => {
+        // make typescript happy
+        const ERC4337_TEST_ENV_VARIABLES_DEFINED =
+            typeof BUNDLER_URL !== "undefined" &&
+            typeof NODE_URL !== "undefined" &&
+            typeof SAFE_FACTORY_ADDRESS !== "undefined" &&
+            typeof SINGLETON_ADDRESS !== "undefined" &&
+            typeof MNEMONIC !== "undefined" &&
+            typeof SAFE_CORE_PROTOCOL_MANAGER_ADDRESS !== "undefined" &&
+            typeof SAFE_CORE_PROTOCOL_REGISTRY !== "undefined";
+
+        if (!ERC4337_TEST_ENV_VARIABLES_DEFINED) {
+            throw new Error("ERC4337_TEST_* environment variables not defined");
+        }
+
+        const bundlerProvider = new JsonRpcProvider(BUNDLER_URL, undefined, { batchMaxCount: 1 });
+        const provider = new hre.ethers.JsonRpcProvider(NODE_URL);
+
+        const mnemonic = hre.ethers.Mnemonic.fromPhrase(MNEMONIC);
+        const wallet = hre.ethers.HDNodeWallet.fromMnemonic(mnemonic).connect(provider);
+        const safeProxyFactory = await hre.ethers.getContractAt("SafeProxyFactory", SAFE_FACTORY_ADDRESS, wallet);
+        const safeSingleton = await hre.ethers.getContractAt("Safe", SINGLETON_ADDRESS, wallet);
+        const safeProtocolManager = await hre.ethers.getContractAt("SafeProtocolManager", SAFE_CORE_PROTOCOL_MANAGER_ADDRESS, wallet);
+        const safeProtocolRegistry = await hre.ethers.getContractAt("SafeProtocolRegistry", SAFE_CORE_PROTOCOL_REGISTRY, wallet);
+
+        const entryPoints = await bundlerProvider.send("eth_supportedEntryPoints", []);
+        if (entryPoints.length === 0) {
+            throw new Error("No entry points found");
+        }
+        console.log(`Entrypoint address: ${entryPoints[0]}`);
+
+        let erc4337Plugin: ERC4337Plugin;
+        if (FOUR337_PLUGIN_ADDRESS) {
+            console.log(`Using 4337 Plugin address from the environment variable`);
+            erc4337Plugin = await hre.ethers.getContractAt("ERC4337Plugin", FOUR337_PLUGIN_ADDRESS, wallet);
+        } else {
+            console.log(`Deploying ERC4337Plugin...`);
+            erc4337Plugin = await ethers
+                .getContractFactory("ERC4337Plugin", wallet)
+                .then((factory) => factory.deploy(SAFE_CORE_PROTOCOL_MANAGER_ADDRESS, entryPoints[0]))
+                .then((tx) => tx.waitForDeployment());
+            await sleep(10000);
+            console.log(`Deployed ERC4337Plugin at ${await erc4337Plugin.getAddress()}`);
+
+            console.log(`Registering ERC4337Plugin at the Safe Protocol Registry...`);
+            await safeProtocolRegistry
+                .addModule(await erc4337Plugin.getAddress(), ModuleType.Plugin + ModuleType.FunctionHandler)
+                .then((tx) => tx.wait(1));
+            console.log(`Registered ERC4337Plugin at the Safe Protocol Registry`);
+        }
+
+        const entryPoint = await ethers.getContractAt("IEntryPoint", entryPoints[0], wallet);
+
+        console.log(`ERC4337Plugin deployed at ${await erc4337Plugin.getAddress()}`);
+
+        return {
+            wallet,
+            safeProxyFactory,
+            safeSingleton,
+            safeProtocolManager,
+            entryPoint,
+            bundlerProvider,
+            erc4337Plugin,
+            provider,
+        };
+    };
 
     it("should be initialized correctly", async () => {
         const { erc4337Plugin } = await hardhatNetworkSetup();
@@ -210,9 +257,9 @@ describe("ERC4337 Plugin", () => {
         // prefund safe
         await signers[0].sendTransaction({ to: safe, value: 1000000000000000000n });
 
-        await expect(
-            safeWithPluginInterface.connect(entryPoint).validateUserOp(userOperation, userOpHash, 1000000000000000000n),
-        ).to.be.revertedWith("GS026");
+        expect(
+            await safeWithPluginInterface.connect(entryPoint).validateUserOp.staticCall(userOperation, userOpHash, 1000000000000000000n),
+        ).to.be.equal(1);
     });
 
     it("can execute a transaction coming from the entrypoint", async () => {
@@ -255,7 +302,7 @@ describe("ERC4337 Plugin", () => {
         await signers[0].sendTransaction({ to: safe, value: 1000000000000000000n });
 
         await expect(
-            safeWithPluginInterface.connect(signers[0]).validateUserOp(userOperation, userOpHash, 1000000000000000000n),
+            safeWithPluginInterface.connect(signers[0]).validateUserOp.staticCall(userOperation, userOpHash, 1000000000000000000n),
         ).to.be.revertedWith("Only entrypoint");
     });
 
@@ -270,6 +317,46 @@ describe("ERC4337 Plugin", () => {
         );
     });
 
+    itif("integration test - hashes generated by getUserOpHash should match entrypoint hash", async () => {
+        const bundlerProvider = new JsonRpcProvider(BUNDLER_URL, undefined, { batchMaxCount: 1 });
+        const provider = new hre.ethers.JsonRpcProvider(NODE_URL);
+
+        const entryPoints = await bundlerProvider.send("eth_supportedEntryPoints", []);
+        if (entryPoints.length === 0) {
+            throw new Error("No entry points found");
+        }
+        let entryPoint = await ethers.getContractAt("IEntryPoint", entryPoints[0]);
+        entryPoint = entryPoint.connect(provider);
+
+        const getRandomHexBytes = (size: number) => {
+            return hre.ethers.hexlify(hre.ethers.randomBytes(size));
+        };
+
+        const userOperation: UserOperation = {
+            initCode: getRandomHexBytes(128),
+            sender: getRandomHexBytes(20),
+            nonce: 0,
+            callData: getRandomHexBytes(128),
+            callGasLimit: 25000,
+            verificationGasLimit: 100000,
+            preVerificationGas: 100000,
+            maxFeePerGas: 73737373737,
+            maxPriorityFeePerGas: 737373,
+            paymasterAndData: getRandomHexBytes(128),
+            signature: getRandomHexBytes(65),
+        };
+
+        const userOpHash = await getUserOpHash(
+            userOperation,
+            await entryPoint.getAddress(),
+            await provider.getNetwork().then((n) => n.chainId),
+        );
+
+        const entryPointUserOpHash = await entryPoint.getUserOpHash(userOperation);
+
+        expect(userOpHash).to.be.eq(entryPointUserOpHash);
+    });
+
     /**
      * This test verifies the ERC4337 based on gas estimation for a user operation
      * The user operation deploys a Safe with the ERC4337 module and a handler
@@ -277,5 +364,69 @@ describe("ERC4337 Plugin", () => {
      * 1. Deployment of the Safe with the ERC4337 module and handler is possible
      * 2. Executing a transaction is possible
      */
-    itif("integration test", async () => {});
+    itif("integration test - it deploys a wallet and executes a user operation", async () => {
+        const { erc4337Plugin, safeProxyFactory, safeSingleton, wallet, entryPoint, provider, bundlerProvider } =
+            await integrationTestSetup();
+        console.log(`Successfully set up test environment.`);
+        const feeData = await provider.getFeeData();
+        if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
+            throw new Error("Could not get fee data");
+        }
+
+        const maxFeePerGas = `0x${feeData.maxFeePerGas?.toString(16)}`;
+        const maxPriorityFeePerGas = `0x${feeData.maxPriorityFeePerGas?.toString(16)}`;
+
+        const initializer = safeSingleton.interface.encodeFunctionData("setup", [
+            [await wallet.getAddress()],
+            1,
+            await erc4337Plugin.getAddress(),
+            erc4337Plugin.interface.encodeFunctionData("enableSafeCoreProtocolWith4337Plugin"),
+            ZeroAddress,
+            ZeroAddress,
+            0,
+            ZeroAddress,
+        ]);
+        console.log(`Obtaining safe address...`);
+        const safeAddress = await safeProxyFactory.createProxyWithNonce.staticCall(await safeSingleton.getAddress(), initializer, 73);
+        console.log({ safeAddress });
+
+        const initCode =
+            (await safeProxyFactory.getAddress()) +
+            safeProxyFactory.interface
+                .encodeFunctionData("createProxyWithNonce", [await safeSingleton.getAddress(), initializer, 73])
+                .slice(2);
+
+        const userOperation: UserOperation = {
+            initCode,
+            sender: safeAddress,
+            nonce: 0,
+            callData: "0x",
+            callGasLimit: 12100,
+            verificationGasLimit: 512694,
+            preVerificationGas: 51938,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            paymasterAndData: "0x",
+            signature: "0x",
+        };
+        const userOpHash = await getUserOpHash(
+            userOperation,
+            await entryPoint.getAddress(),
+            await provider.getNetwork().then((n) => n.chainId),
+        );
+        const userOpHashFromEntryPoint = await entryPoint.getUserOpHash(userOperation);
+        console.log({ userOpHash, userOpHashFromEntryPoint });
+        const signature = await wallet.signMessage(ethers.getBytes(userOpHash));
+        console.log({ signature });
+        userOperation.signature = `0x${(BigInt(signature) + 4n).toString(16)}`;
+
+        // Native tokens for the pre-fund 💸
+        await wallet.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("0.005") }).then((tx) => tx.wait(1));
+        // The bundler uses a different node, so we need to allow it sometime to sync
+        await sleep(10000);
+
+        const operation = await bundlerProvider.send("eth_sendUserOperation", [userOperation, await entryPoint.getAddress()]);
+
+        console.log({ operation });
+    }).timeout(100000);
 });

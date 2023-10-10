@@ -5,9 +5,8 @@ import {ISafeProtocolPlugin, ISafeProtocolFunctionHandler} from "@safe-global/sa
 import {ISafeProtocolManager} from "@safe-global/safe-core-protocol/contracts/interfaces/Manager.sol";
 import {SafeTransaction, SafeRootAccess, SafeProtocolAction} from "@safe-global/safe-core-protocol/contracts/DataTypes.sol";
 import {MODULE_TYPE_PLUGIN} from "@safe-global/safe-core-protocol/contracts/common/Constants.sol";
-import {BasePlugin, BasePluginWithEventMetadata, PluginMetadata, MetadataProviderType} from "./Base.sol";
-
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {BasePlugin, BasePluginWithEventMetadata, PluginMetadata, MetadataProviderType} from "./Base.sol";
 
 interface ISafe {
     function isOwner(address owner) external view returns (bool);
@@ -34,7 +33,11 @@ interface ISafe {
 
     function setFunctionHandler(bytes4 selector, address functionHandler) external;
 
-    function checkSignatures(bytes32 dataHash, bytes memory, bytes memory signatures) external;
+    function checkSignatures(bytes32 dataHash, bytes memory, bytes memory signatures) external view;
+}
+
+interface IEntryPoint {
+    function getUserOpHash(UserOperation calldata userOp) external view returns (bytes32);
 }
 
 struct UserOperation {
@@ -61,7 +64,10 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
     address public immutable PLUGIN_ADDRESS;
     ISafeProtocolManager public immutable SAFE_PROTOCOL_MANAGER;
     address payable public immutable ENTRY_POINT;
-    uint256 public constant SIGNATURE_VALID = 0;
+    uint256 internal constant SIGNATURE_VALID = 0;
+    // value in case of signature failure, with no time-range.
+    // equivalent to _packValidationData(true,0,0);
+    uint256 internal constant SIGNATURE_VALIDATION_FAILED = 1;
 
     constructor(
         ISafeProtocolManager safeCoreProtocolManager,
@@ -76,10 +82,10 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         UserOperation calldata userOp,
         bytes32 userOpHash,
         uint256 missingAccountFunds
-    ) external returns (uint256 validationData) {
+    ) external returns (uint256 validationResult) {
         require(msg.sender == address(PLUGIN_ADDRESS), "Only plugin");
 
-        ISafe(payable(userOp.sender)).checkSignatures(userOpHash, "", userOp.signature);
+        validationResult = validateSignature(userOp, userOpHash);
 
         if (missingAccountFunds != 0) {
             SafeProtocolAction[] memory actions = new SafeProtocolAction[](1);
@@ -89,8 +95,6 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
                 SafeTransaction({actions: actions, nonce: 0, metadataHash: userOpHash})
             );
         }
-
-        return SIGNATURE_VALID;
     }
 
     function execTransaction(address safe, address payable to, uint256 value, bytes calldata data) external {
@@ -100,6 +104,14 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         actions[0] = SafeProtocolAction({to: to, value: value, data: data});
 
         SAFE_PROTOCOL_MANAGER.executeTransaction(safe, SafeTransaction({actions: actions, nonce: 0, metadataHash: bytes32(0)}));
+    }
+
+    function validateSignature(UserOperation calldata userOp, bytes32 userOpHash) internal view returns (uint256 validationResult) {
+        try ISafe(payable(userOp.sender)).checkSignatures(userOpHash, "", userOp.signature) {
+            return SIGNATURE_VALID;
+        } catch {
+            return SIGNATURE_VALIDATION_FAILED;
+        }
     }
 
     function handle(address, address sender, uint256, bytes calldata data) external returns (bytes memory result) {
@@ -112,13 +124,13 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
             (success, result) = PLUGIN_ADDRESS.call(data);
         }
 
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // use assembly to avoid converting result bytes to string
-            if eq(success, 0) {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        // // solhint-disable-next-line no-inline-assembly
+        // assembly {
+        //     // use assembly to avoid converting result bytes to string
+        //     if eq(success, 0) {
+        //         revert(add(result, 32), mload(result))
+        //     }
+        // }
     }
 
     function enableSafeCoreProtocolWith4337Plugin() public {
