@@ -1,6 +1,6 @@
 import { AbiCoder, Interface, isHexString, keccak256 } from "ethers";
 import { BasePlugin, IMetadataProvider } from "../../typechain-types";
-import { getInstance } from "../utils/contracts";
+import { getInstance } from "../../test/utils/contracts";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface PluginMetadata {

@@ -1,7 +1,7 @@
 import hre, { deployments, ethers } from "hardhat";
 import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { getWhiteListPlugin, getInstance } from "../src/utils/contracts";
+import { getWhiteListPlugin, getInstance } from "./utils/contracts";
 import { loadPluginMetadata } from "../src/utils/metadata";
 import { buildSingleTx } from "../src/utils/builder";
 import { ISafeProtocolManager__factory, MockContract } from "../typechain-types";
