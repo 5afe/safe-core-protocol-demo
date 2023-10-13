@@ -1,7 +1,7 @@
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-ethers";
 import { task } from "hardhat/config";
-import { getPlugin, getRegistry, getRelayPlugin } from "../utils/contracts";
+import { getPlugin, getRegistry, getRelayPlugin } from "../../test/utils/contracts";
 import { IntegrationType } from "../utils/constants";
 import { loadPluginMetadata } from "../utils/metadata";
 
