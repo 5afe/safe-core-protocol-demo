@@ -5,7 +5,7 @@ import { ZeroAddress } from "ethers";
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
-    const { deployer, recoverer } = await getNamedAccounts();
+    const { deployer, recoverer, safeCoreProtocolManager, safeCoreProtocolFunctionHandler } = await getNamedAccounts();
     const { deploy } = deployments;
 
     // execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
@@ -35,6 +35,12 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         deterministicDeployment: true,
     });
 
+    await deploy("ERC4337Plugin", {
+        from: deployer,
+        args: [safeCoreProtocolManager, safeCoreProtocolFunctionHandler, "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"],
+        log: true,
+        deterministicDeployment: true,
+    });
 };
 
 deploy.tags = ["plugins"];

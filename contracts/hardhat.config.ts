@@ -20,7 +20,7 @@ const argv : any = yargs
     .help(false)
     .version(false).argv;
 
-const { NODE_URL, MNEMONIC, INFURA_KEY, ETHERSCAN_API_KEY} = process.env;
+const { NODE_URL, MNEMONIC, INFURA_KEY, ETHERSCAN_API_KEY, ERC4337_TEST_SAFE_CORE_PROTOCOL_FUNCTION_HANDLER, ERC4337_TEST_SAFE_CORE_PROTOCOL_MANAGER_ADDRESS} = process.env;
 
 import "./src/tasks/test_registry"
 
@@ -91,6 +91,12 @@ const config: HardhatUserConfig = {
     },
     recoverer: {
       default: 1
+    },
+    safeCoreProtocolManager: {
+      default: ERC4337_TEST_SAFE_CORE_PROTOCOL_MANAGER_ADDRESS || 2
+    },
+    safeCoreProtocolFunctionHandler: {
+      default: ERC4337_TEST_SAFE_CORE_PROTOCOL_FUNCTION_HANDLER || ""
     }
   }
 };

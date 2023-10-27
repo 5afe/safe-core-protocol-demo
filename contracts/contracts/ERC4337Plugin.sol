@@ -63,6 +63,8 @@ struct UserOperation {
 contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetadata {
     address public immutable PLUGIN_ADDRESS;
     ISafeProtocolManager public immutable SAFE_PROTOCOL_MANAGER;
+    address public immutable SAFE_PROTOCOL_FUNCTION_HANDLER;
+
     address payable public immutable ENTRY_POINT;
     uint256 internal constant SIGNATURE_VALID = 0;
     // value in case of signature failure, with no time-range.
@@ -71,11 +73,13 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
 
     constructor(
         ISafeProtocolManager safeCoreProtocolManager,
+        address safeCoreProtocolFunctionHandler,
         address payable entryPoint
     ) BasePluginWithEventMetadata(PluginMetadata({name: "ERC4337 Plugin", version: "1.0.0", permissions: 1, iconUrl: "", appUrl: ""})) {
         PLUGIN_ADDRESS = address(this);
         SAFE_PROTOCOL_MANAGER = safeCoreProtocolManager;
         ENTRY_POINT = entryPoint;
+        SAFE_PROTOCOL_FUNCTION_HANDLER = safeCoreProtocolFunctionHandler;
     }
 
     function validateUserOp(
@@ -137,9 +141,10 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         require(address(this) != PLUGIN_ADDRESS, "Only delegatecall");
 
         ISafe safe = ISafe(address(this));
-        safe.setFallbackHandler(address(SAFE_PROTOCOL_MANAGER));
+        safe.setFallbackHandler(SAFE_PROTOCOL_FUNCTION_HANDLER);
         safe.enableModule(address(SAFE_PROTOCOL_MANAGER));
-        safe.enablePlugin(PLUGIN_ADDRESS, MODULE_TYPE_PLUGIN);
+
+        ISafe(address(SAFE_PROTOCOL_MANAGER)).enablePlugin(PLUGIN_ADDRESS, MODULE_TYPE_PLUGIN);
         safe.setFunctionHandler(this.validateUserOp.selector, PLUGIN_ADDRESS);
         safe.setFunctionHandler(this.execTransaction.selector, PLUGIN_ADDRESS);
     }
