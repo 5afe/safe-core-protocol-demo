@@ -1,13 +1,13 @@
 import hre, { deployments, ethers } from "hardhat";
 import { expect } from "chai";
-import { AbiCoder, keccak256, JsonRpcProvider, ZeroAddress } from "ethers";
+import { AbiCoder, keccak256, JsonRpcProvider, ZeroAddress, toUtf8String, toUtf8Bytes } from "ethers";
 import { loadPluginMetadata } from "../src/utils/metadata";
 import { getProtocolManagerAddress } from "../src/utils/protocol";
 import { deploySafe, getSafeProxyFactoryContractFactory, getSafeSingletonContractFactory } from "./utils/safe";
 import { ModuleType } from "../src/utils/constants";
 import { UserOperation } from "./utils/types";
 import { BigNumberish } from "ethers";
-import { ERC4337Plugin } from "../typechain-types";
+import { ERC4337Plugin, IEntryPoint } from "../typechain-types";
 
 const ERC4337_TEST_ENV_VARIABLES_DEFINED =
     typeof process.env.ERC4337_TEST_BUNDLER_URL !== "undefined" &&
@@ -93,7 +93,7 @@ describe.only("ERC4337 Plugin", () => {
                 factory.deploy(safeProtocolManager.getAddress(), safeProtocolFunctionHandler.target, entryPoint.getAddress()),
             );
 
-        console.log("erc4337 plugin", erc4337Plugin.target )
+        console.log("erc4337 plugin", erc4337Plugin.target);
 
         await testRegistryDeployment
             .addModule(erc4337Plugin.getAddress(), ModuleType.Plugin + ModuleType.FunctionHandler)
@@ -154,7 +154,6 @@ describe.only("ERC4337 Plugin", () => {
             console.log(`Using 4337 Plugin address from the environment variable`);
             erc4337Plugin = await hre.ethers.getContractAt("ERC4337Plugin", FOUR337_PLUGIN_ADDRESS, wallet);
         } else {
-
             console.log(`Deploying ERC4337Plugin...`);
             erc4337Plugin = await ethers
                 .getContractFactory("ERC4337Plugin", wallet)
@@ -184,6 +183,17 @@ describe.only("ERC4337 Plugin", () => {
             erc4337Plugin,
             provider,
         };
+    };
+
+    const addAccountDepositExternally = async (entryPoint: IEntryPoint, account: string, amount: string) => {
+        const entryPointInterface = new hre.ethers.Interface(["function depositTo(address)"]);
+        // const data = entryPointInterface.encodeFunctionData("depositTo", [account]);
+        // console.log(await entryPoint.balanceOf.staticCall(account));
+        if ((await entryPoint.balanceOf.staticCall(account)) === 0n) {
+            console.log("Sending deposit to entrypoint:", account, amount);
+            await entryPoint.depositTo(account, { value: amount });
+            await sleep(20000);
+        }
     };
 
     it.skip("should be initialized correctly", async () => {
@@ -355,8 +365,8 @@ describe.only("ERC4337 Plugin", () => {
             callGasLimit: 25000,
             verificationGasLimit: 100000,
             preVerificationGas: 100000,
-            maxFeePerGas: 73737373737,
-            maxPriorityFeePerGas: 737373,
+            maxFeePerGas: 500000,
+            maxPriorityFeePerGas: 50000,
             paymasterAndData: getRandomHexBytes(128),
             signature: getRandomHexBytes(65),
         };
@@ -402,11 +412,7 @@ describe.only("ERC4337 Plugin", () => {
             ZeroAddress,
         ]);
         console.log(`Obtaining safe address...`);
-        const safeAddress = await safeProxyFactory.createProxyWithNonce.staticCall(
-            await safeSingleton.getAddress(),
-            initializer,
-            73,
-        );
+        const safeAddress = await safeProxyFactory.createProxyWithNonce.staticCall(await safeSingleton.getAddress(), initializer, 73);
         console.log({ safeAddress });
 
         const initCode =
@@ -420,9 +426,9 @@ describe.only("ERC4337 Plugin", () => {
             sender: safeAddress,
             nonce: 0,
             callData: "0x",
-            callGasLimit: 500000,
-            verificationGasLimit: 600000,
-            preVerificationGas: 200000,
+            callGasLimit: 5000000,
+            verificationGasLimit: 700000,
+            preVerificationGas: 500000,
             maxFeePerGas,
             maxPriorityFeePerGas,
             paymasterAndData: "0x",
@@ -439,13 +445,49 @@ describe.only("ERC4337 Plugin", () => {
         console.log({ signature });
         userOperation.signature = `0x${(BigInt(signature) + 4n).toString(16)}`;
 
-        // Native tokens for the pre-fund 💸
-        await wallet.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("0.005") }).then((tx) => tx.wait(1));
-        // The bundler uses a different node, so we need to allow it sometime to sync
-        await sleep(20000);
+        // Native tokens for the pre-fund 💸 if needed
+        if ((await provider.getBalance(safeAddress)) < hre.ethers.parseEther("0.05")) {
+            console.log("Sending native tokens to safeAddress");
+            await wallet.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("0.05") }).then((tx) => tx.wait(1));
+            // The bundler uses a different node, so we need to allow it sometime to sync
+            await sleep(20000);
+        }
+
+        // await addAccountDepositExternally(entryPoint, safeAddress, hre.ethers.parseEther("0.005").toString());
+
+        // const asdf = erc4337Plugin.interface.encodeFunctionData("validateUserOp", [userOperation, userOpHash, 0]);
+        // console.log(asdf);
+        // console.log(userOperation.callData);
 
         const operation = await bundlerProvider.send("eth_sendUserOperation", [userOperation, await entryPoint.getAddress()]);
-
         console.log({ operation });
     }).timeout(100000);
+
+    it.skip("test", async () => {
+        const { erc4337Plugin, safeProxyFactory, safeSingleton, wallet, entryPoint, provider, bundlerProvider } =
+            await integrationTestSetup();
+        await wallet.sendTransaction({
+            to: safeProxyFactory.target,
+            data: "0x1688f0b900000000000000000000000041675c099f32341bf84bfc5382af534df5c7461a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000490000000000000000000000000000000000000000000000000000000000000184b63e800d0000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000008561715b3b71cbcca4967e8efeccd4b1f9c3fac0000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007bae51c66fd8fa963702d3f0e561c388849674230000000000000000000000000000000000000000000000000000000000000004b005de5b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        });
+    });
+
+    it.skip("test", async () => {
+        console.log("test");
+        const address = "0x3CE5D50834a3Bf8281BA0D41ad4eB859c1CE6aE0";
+        const slot = "0x04";
+        const key = "0x3a871cdd";
+
+        const paddedAddress = hre.ethers.zeroPadValue(address, 32);
+        const paddedSlot = hre.ethers.zeroPadValue(slot, 32);
+        const paddedKey = hre.ethers.zeroPadValue(key, 32);
+
+        const concatenated1 = hre.ethers.concat([paddedKey, paddedSlot]);
+        const hash1 = hre.ethers.keccak256(concatenated1);
+
+        const concatenated = hre.ethers.concat([paddedAddress, hash1]);
+        const hash = hre.ethers.keccak256(concatenated);
+
+        console.log("slot:", hash);
+    });
 });

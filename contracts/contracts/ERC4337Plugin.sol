@@ -38,6 +38,10 @@ interface ISafe {
 
 interface IEntryPoint {
     function getUserOpHash(UserOperation calldata userOp) external view returns (bytes32);
+
+    function depositTo(address account) external payable;
+
+    function balanceOf(address account) external view returns (uint256);
 }
 
 struct UserOperation {
@@ -88,16 +92,10 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         uint256 missingAccountFunds
     ) external returns (uint256 validationResult) {
         require(msg.sender == address(PLUGIN_ADDRESS), "Only plugin");
-
-        validationResult = validateSignature(userOp, userOpHash);
+        // validationResult = validateSignature(userOp, userOpHash);
 
         if (missingAccountFunds != 0) {
-            SafeProtocolAction[] memory actions = new SafeProtocolAction[](1);
-            actions[0] = SafeProtocolAction({to: ENTRY_POINT, value: missingAccountFunds, data: ""});
-            SAFE_PROTOCOL_MANAGER.executeTransaction(
-                userOp.sender,
-                SafeTransaction({actions: actions, nonce: 0, metadataHash: userOpHash})
-            );
+            ISafe(userOp.sender).execTransactionFromModule(ENTRY_POINT, missingAccountFunds, "", 0);
         }
     }
 
@@ -143,10 +141,11 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
         ISafe safe = ISafe(address(this));
         safe.setFallbackHandler(SAFE_PROTOCOL_FUNCTION_HANDLER);
         safe.enableModule(address(SAFE_PROTOCOL_MANAGER));
+        safe.enableModule(address(PLUGIN_ADDRESS));
 
-        ISafe(address(SAFE_PROTOCOL_MANAGER)).enablePlugin(PLUGIN_ADDRESS, MODULE_TYPE_PLUGIN);
+        // ISafe(address(SAFE_PROTOCOL_MANAGER)).enablePlugin(PLUGIN_ADDRESS, MODULE_TYPE_PLUGIN);
         safe.setFunctionHandler(this.validateUserOp.selector, PLUGIN_ADDRESS);
-        safe.setFunctionHandler(this.execTransaction.selector, PLUGIN_ADDRESS);
+        // safe.setFunctionHandler(this.execTransaction.selector, PLUGIN_ADDRESS);
     }
 
     function metadataProvider()
@@ -165,4 +164,6 @@ contract ERC4337Plugin is ISafeProtocolFunctionHandler, BasePluginWithEventMetad
             interfaceId == type(IERC165).interfaceId ||
             interfaceId == type(ISafeProtocolFunctionHandler).interfaceId;
     }
+
+    receive() external payable {}
 }
