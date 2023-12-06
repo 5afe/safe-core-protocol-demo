@@ -1,6 +1,6 @@
 # Safe{Core} Protocol Demo
 
-This repository contain a demo for developing and using [Plugins](https://github.com/5afe/safe-core-protocol-specs/tree/main/integrations#plugins) from the Safe{Core} Protocol.
+This repository contain a demo for developing and using [Plugins](https://github.com/safe-global/safe-core-protocol-specs/tree/main/modules#plugins) from the Safe{Core} Protocol.
 
 ## Structure
 
