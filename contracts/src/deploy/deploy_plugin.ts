@@ -14,27 +14,33 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // We don't use a trusted origin right now to make it easier to test.
     // For production networks it is strongly recommended to set one to avoid potential fee extraction.
     const trustedOrigin = ZeroAddress // hre.network.name === "hardhat" ? ZeroAddress : getGelatoAddress(hre.network.name)
-    await deploy("RelayPlugin", {
-        from: deployer,
-        args: [trustedOrigin, relayMethod],
-        log: true,
-        deterministicDeployment: true,
-    });
+    // await deploy("RelayPlugin", {
+    //     from: deployer,
+    //     args: [trustedOrigin, relayMethod],
+    //     log: true,
+    //     deterministicDeployment: true,
+    // });
 
-    await deploy("WhitelistPlugin", {
+    // await deploy("WhitelistPlugin", {
+    //     from: deployer,
+    //     args: [],
+    //     log: true,
+    //     deterministicDeployment: true,
+    // });
+
+    // await deploy("RecoveryWithDelayPlugin", {
+    //     from: deployer,
+    //     args: [recoverer],
+    //     log: true,
+    //     deterministicDeployment: true,
+    // });
+
+    await deploy("StoplossPlugin", {
         from: deployer,
         args: [],
         log: true,
         deterministicDeployment: true,
     });
-
-    await deploy("RecoveryWithDelayPlugin", {
-        from: deployer,
-        args: [recoverer],
-        log: true,
-        deterministicDeployment: true,
-    });
-
 };
 
 deploy.tags = ["plugins"];

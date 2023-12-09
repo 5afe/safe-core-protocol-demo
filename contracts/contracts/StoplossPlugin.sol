@@ -18,7 +18,6 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
         uint256 stopLossLimit;
         address tokenAddress;
         address contractAddress;
-        SafeTransaction safeSwapTx;
     }
 
     // safe account => stopLoss
@@ -42,10 +41,27 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
         )
     {}
 
+    function addStopLoss(uint256 _stopLossLimit, address _tokenAddress, address _contractAddress) external {
+        Bots[msg.sender] = StopLoss(_stopLossLimit, _tokenAddress, _contractAddress);
+        emit AddStopLoss(msg.sender, _tokenAddress, _contractAddress, _stopLossLimit);
+    }
+
+    /// @notice executes the transaction from the bot to swap or unstake,
+    ///         checks if the bot is valid by checking the signature
+    /// @dev Can further be extened and add role access modifier by
+    ///      zodiac (https://github.com/gnosis/zodiac-modifier-roles)
+    ///      to check the functions that can be called from this on a given contract address
+    /// @param _safeAddress address of the safe
+    /// @param manager manager address
+    /// @param safe account
+    /// @param _hashedMessage hassed message to check the validity of the bot.
+    /// @param _safeSwapTx safe transaction to swap the token for a stable coin or
+    ///                    unstake the tokens from a platform.
     function executeFromPlugin(
         address _safeAddress,
         ISafeProtocolManager manager,
         ISafe safe,
+        SafeTransaction calldata _safeSwapTx,
         bytes32 _hashedMessage,
         bytes32 _r,
         bytes32 _s,
@@ -54,17 +70,12 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
         verifyMessage(_hashedMessage, _v, _r, _s);
         StopLoss memory stopLossBot = Bots[_safeAddress];
 
-        try manager.executeTransaction(safe, stopLossBot.safeSwapTx) returns (bytes[] memory) {
+        try manager.executeTransaction(safe, _safeSwapTx) returns (bytes[] memory) {
             delete Bots[_safeAddress];
             emit RemoveStopLoss(_safeAddress, stopLossBot.tokenAddress);
         } catch (bytes memory reason) {
             revert SwapFailure(reason);
         }
-    }
-
-    function addStopLoss(uint256 _stopLossLimit, address _tokenAddress, address _contractAddress, SafeTransaction calldata _safeSwapTx) external {
-        Bots[msg.sender] = StopLoss(_stopLossLimit, _tokenAddress, _contractAddress, _safeSwapTx);
-        emit AddStopLoss(msg.sender, _tokenAddress, _contractAddress, _stopLossLimit);
     }
 
     function verifyMessage(bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public pure returns (address) {

@@ -5,6 +5,7 @@ import {
     RelayPlugin,
     TestSafeProtocolRegistryUnrestricted,
     WhitelistPlugin,
+    StoplossPlugin
 } from "../../typechain-types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { getProtocolRegistryAddress } from "../../src/utils/protocol";
@@ -28,5 +29,6 @@ export const getRelayPlugin = (hre: HardhatRuntimeEnvironment) => getSingleton<R
 export const getRegistry = async (hre: HardhatRuntimeEnvironment) =>
     getInstance<TestSafeProtocolRegistryUnrestricted>(hre, "TestSafeProtocolRegistryUnrestricted", await getProtocolRegistryAddress(hre));
 export const getWhiteListPlugin = async (hre: HardhatRuntimeEnvironment) => getSingleton<WhitelistPlugin>(hre, "WhitelistPlugin");
+export const getStopLossPlugin = async (hre: HardhatRuntimeEnvironment) => getSingleton<StoplossPlugin>(hre, "StoplossPlugin");
 export const getRecoveryWithDelayPlugin = async (hre: HardhatRuntimeEnvironment) =>
     getSingleton<RecoveryWithDelayPlugin>(hre, "RecoveryWithDelayPlugin");
