@@ -7,23 +7,38 @@ import {BasePluginWithEventMetadata, PluginMetadata} from "./Base.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
+/// @title A safe plugin to implement stopLoss on a certain token in safe
+/// @author https://github.com/kalrashivam
+/// @notice Creates an event which can be used to create
+///         a bot to track price and then trigger safe transaction through plugin.
+/// @dev The plugin is made based on the safe-core-demo-template
 contract StoplossPlugin is BasePluginWithEventMetadata {
 
-    struct stopLoss {
+    struct StopLoss {
         uint256 stopLossLimit;
         address tokenAddress;
         address contractAddress;
-        bytes swapTx;
+        SafeTransaction safeSwapTx;
     }
 
     // safe account => stopLoss
-    mapping(address => stopLoss) public stopLossBots;
+    mapping(address => StopLoss) public Bots;
 
+    /// @notice Listen for this event to create your stop loss bot
+    /// @param safeAccount safe account address.
+    /// @param tokenAddress token address to apply stoploss on.
+    /// @param contractAddress address of the uniswap/cowswap pair to perform transaction on.
+    /// @param stopLossLimit the limit after which the swap should be triggered.
     event AddStopLoss(address indexed safeAccount, address indexed tokenAddress, address contractAddress, uint256 stopLossLimit);
+    // Listen for this event to remove the bot
+    event RemoveStopLoss(address indexed safeAccount, address indexed tokenAddress);
+
+    // raised when the swap on uniswap fails, check for this in the bot.
+    error SwapFailure(bytes data);
 
     constructor()
         BasePluginWithEventMetadata(
-            PluginMetadata({name: "Stoploss Plugin", version: "1.0.0", requiresRootAccess: true, iconUrl: "", appUrl: ""})
+            PluginMetadata({name: "Stoploss Plugin", version: "1.0.0", requiresRootAccess: false, iconUrl: "", appUrl: ""})
         )
     {}
 
@@ -31,17 +46,19 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
         address _safeAddress,
         ISafeProtocolManager manager,
         ISafe safe
-    ) external returns (bytes memory data) {
-        SafeProtocolAction memory safeProtocolAction = SafeProtocolAction(payable(address(safe)), 0, txData);
-        SafeRootAccess memory safeTx = SafeRootAccess(safeProtocolAction, 0, "");
-        (data) = manager.executeRootAccess(safe, safeTx);
+    ) external {
+        StopLoss memory stopLossBot = Bots[_safeAddress];
 
-        emit OwnerReplaced(address(safe), oldOwner, newOwner);
+        try manager.executeTransaction(safe, stopLossBot.safeSwapTx) returns (bytes[] memory) {
+            delete Bots[_safeAddress];
+            emit RemoveStopLoss(_safeAddress, stopLossBot.tokenAddress);
+        } catch (bytes memory reason) {
+            revert SwapFailure(reason);
+        }
     }
 
-    function addStopLoss(uint256 _stopLossLimit, address _tokenAddress, address _contractAddress, bytes calldata _swapTx) external {
-        stopLossBots[msg.sender] = stopLoss(_stopLossLimit, _tokenAddress, _contractAddress, _swapTx);
+    function addStopLoss(uint256 _stopLossLimit, address _tokenAddress, address _contractAddress, SafeTransaction calldata _safeSwapTx) external {
+        Bots[msg.sender] = StopLoss(_stopLossLimit, _tokenAddress, _contractAddress, _safeSwapTx);
         emit AddStopLoss(msg.sender, _tokenAddress, _contractAddress, _stopLossLimit);
     }
-
 }
