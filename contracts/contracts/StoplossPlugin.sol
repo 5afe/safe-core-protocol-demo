@@ -45,8 +45,13 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
     function executeFromPlugin(
         address _safeAddress,
         ISafeProtocolManager manager,
-        ISafe safe
+        ISafe safe,
+        bytes32 _hashedMessage,
+        bytes32 _r,
+        bytes32 _s,
+        uint8 _v
     ) external {
+        verifyMessage(_hashedMessage, _v, _r, _s);
         StopLoss memory stopLossBot = Bots[_safeAddress];
 
         try manager.executeTransaction(safe, stopLossBot.safeSwapTx) returns (bytes[] memory) {
@@ -60,5 +65,12 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
     function addStopLoss(uint256 _stopLossLimit, address _tokenAddress, address _contractAddress, SafeTransaction calldata _safeSwapTx) external {
         Bots[msg.sender] = StopLoss(_stopLossLimit, _tokenAddress, _contractAddress, _safeSwapTx);
         emit AddStopLoss(msg.sender, _tokenAddress, _contractAddress, _stopLossLimit);
+    }
+
+    function verifyMessage(bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public pure returns (address) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
+        address signer = ecrecover(prefixedHashMessage, _v, _r, _s);
+        return signer;
     }
 }
