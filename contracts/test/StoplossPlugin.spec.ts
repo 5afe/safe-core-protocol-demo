@@ -63,6 +63,7 @@ describe("StopLossPlugin", async () => {
         await account.executeCallViaMock(await plugin.getAddress(), 0, data, MaxUint256);
         // Required for isOwner(address) to return true
         account.givenMethodReturnBool("0x2f54bf6e", true);
-        
+        // TODO: test if a normal transaction works on safe.
+
     });
 });

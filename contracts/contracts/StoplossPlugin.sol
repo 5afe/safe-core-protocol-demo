@@ -51,14 +51,12 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
     /// @dev Can further be extened and add role access modifier by
     ///      zodiac (https://github.com/gnosis/zodiac-modifier-roles)
     ///      to check the functions that can be called from this on a given contract address
-    /// @param _safeAddress address of the safe
     /// @param manager manager address
     /// @param safe account
     /// @param _hashedMessage hassed message to check the validity of the bot.
     /// @param _safeSwapTx safe transaction to swap the token for a stable coin or
     ///                    unstake the tokens from a platform.
     function executeFromPlugin(
-        address _safeAddress,
         ISafeProtocolManager manager,
         ISafe safe,
         SafeTransaction calldata _safeSwapTx,
@@ -67,12 +65,15 @@ contract StoplossPlugin is BasePluginWithEventMetadata {
         bytes32 _s,
         uint8 _v
     ) external {
-        verifyMessage(_hashedMessage, _v, _r, _s);
-        StopLoss memory stopLossBot = Bots[_safeAddress];
+        address safeAddress = address(safe);
+        address signer = verifyMessage(_hashedMessage, _v, _r, _s);
+        require(signer == safeAddress, "ERROR_UNVERIFIED_BOT");
+
+        StopLoss memory stopLossBot = Bots[safeAddress];
 
         try manager.executeTransaction(safe, _safeSwapTx) returns (bytes[] memory) {
-            delete Bots[_safeAddress];
-            emit RemoveStopLoss(_safeAddress, stopLossBot.tokenAddress);
+            delete Bots[safeAddress];
+            emit RemoveStopLoss(safeAddress, stopLossBot.tokenAddress);
         } catch (bytes memory reason) {
             revert SwapFailure(reason);
         }
